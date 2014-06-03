@@ -15,7 +15,7 @@ class EL {
   ~EL();
 
   void setPromptFn(PromptFnType prompt_fn);
-  std::string getLine();
+  bool getLine(std::string* line);
  private:
   EditLine* el;
 };
@@ -34,10 +34,12 @@ void EL::setPromptFn(EL::PromptFnType promptFn) {
   el_set(el, EL_PROMPT, promptFn);
 }
 
-std::string EL::getLine() {
+bool EL::getLine(std::string* line) {
   int len;
   const char* rawLine = el_gets(el, &len);
-  return std::string(rawLine, len);
+  if (!rawLine) return false;
+  line->assign(rawLine, len);
+  return true;
 }
 
 int main(int argc, char** argv) {
@@ -47,8 +49,8 @@ int main(int argc, char** argv) {
   EL el(argv[0]);
   el.setPromptFn([](EditLine*){ return "> "; });
 
-  while (true) {
-    std::string line = el.getLine();
+  std::string line;
+  while (el.getLine(&line)) {
     std::cout << line;
   }
 
