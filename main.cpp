@@ -40,14 +40,9 @@ std::string EL::getLine() {
   return std::string(rawLine, len);
 }
 
-cl::opt<int> Num(cl::Positional, cl::desc("<number>"), cl::init(3));
-
 int main(int argc, char** argv) {
+  cl::opt<int> Num(cl::Positional, cl::desc("<number>"), cl::init(3));
   cl::ParseCommandLineOptions(argc, argv);
-
-  for (int i = 0; i < Num; ++i) {
-    std::cout << "What's going on?\n";
-  }
 
   EL el(argv[0]);
   el.setPromptFn([](EditLine*){ return "> "; });
