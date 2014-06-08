@@ -19,6 +19,7 @@ env.Program(
     target = 'fiddle',
     source = [
         'main.cpp',
+        'editline.cpp',
     ],
 )
 
