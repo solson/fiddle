@@ -3,8 +3,8 @@
 namespace fiddle {
 namespace el {
 
-EL::EL(const char* program_name) {
-  el = el_init(program_name, stdin, stdout, stderr);
+EL::EL(const char* program_name)
+    : el(el_init(program_name, stdin, stdout, stderr)) {
   // Load user configuration from ~/.editrc
   el_source(el, nullptr);
 }
