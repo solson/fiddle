@@ -8,7 +8,6 @@ extern "C" {
 }
 
 namespace fiddle {
-namespace el {
 
 class EL {
  public:
@@ -23,7 +22,6 @@ class EL {
   EditLine* el;
 };
 
-}
 }
 
 #endif /* EDITLINE_H_ */

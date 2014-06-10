@@ -4,7 +4,7 @@
 #include <string>
 #include "editline.h"
 
-using namespace fiddle::el;
+using namespace fiddle;
 using namespace llvm;
 
 int main(int argc, char** argv) {

@@ -1,7 +1,6 @@
 #include "editline.h"
 
 namespace fiddle {
-namespace el {
 
 EL::EL(const char* program_name)
     : el(el_init(program_name, stdin, stdout, stderr)) {
@@ -25,5 +24,4 @@ bool EL::getLine(std::string* line) {
   return true;
 }
 
-}
 }
