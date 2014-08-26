@@ -8,20 +8,25 @@ env = Environment(
         '--std=c++11',
     ],
 
-    # Allow clang++ to use color
+    # Allow clang++ to use color.
     ENV = {'TERM': os.environ['TERM']},
 )
 
 env.ParseConfig('llvm-config --cxxflags --ldflags --libs core')
-env.ParseConfig('pkg-config --libs --cflags libedit')
+env.ParseConfig('pkg-config --libs --cflags libedit icu-uc')
 
 env.Program(
     target = 'fiddle',
     source = [
-        'main.cpp',
         'editline.cpp',
+        'main.cpp',
+        'parser.cpp',
     ],
 )
+
+debug = ARGUMENTS.get('debug', 0)
+if int(debug):
+   env.Append(CPPFLAGS = ['-g'])
 
 # Print C++ flags for the YouCompleteMe vim plugin.
 if ARGUMENTS.get('ycm', 0):
