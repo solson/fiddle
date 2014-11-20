@@ -6,6 +6,10 @@ env = Environment(
         '-Wall',
         '-Wextra',
         '--std=c++11',
+
+        # Temporarily silence this warning because Clang 3.4 erroneously detects
+        # it in some LLVM header files.
+        '-Wno-unused-parameter',
     ],
 
     # Allow clang++ to use color.
