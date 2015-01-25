@@ -29,31 +29,18 @@ struct IntExpr : public Expr {
   }
 };
 
-enum class BinOp {
-  kAdd, kSub, kMul, kDiv
-};
-
-inline std::string binOpToString(BinOp op) {
-  switch (op) {
-    case BinOp::kAdd: return "+";
-    case BinOp::kSub: return "-";
-    case BinOp::kMul: return "*";
-    case BinOp::kDiv: return "/";
-    default: assert(false);
-  }
-}
-
 struct BinOpExpr : public Expr {
-  BinOp op;
+  std::string name;
   std::unique_ptr<Expr> lhs, rhs;
 
-  BinOpExpr(BinOp op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs)
-      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+  BinOpExpr(std::string name, std::unique_ptr<Expr> lhs,
+            std::unique_ptr<Expr> rhs)
+      : name(std::move(name)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
   llvm::Value* codegen() const override;
 
   void debug(std::ostream& o) const override {
-    o << "BinOp(" << binOpToString(op) << ", ";
+    o << "BinOp(" << name << ", ";
     lhs->debug(o);
     o << ", ";
     rhs->debug(o);

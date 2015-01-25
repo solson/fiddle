@@ -22,11 +22,16 @@ llvm::Value* BinOpExpr::codegen() const {
   }
 
   llvm::IRBuilder<> builder(llvm::getGlobalContext());
-  switch (op) {
-    case BinOp::kAdd: return builder.CreateAdd(left, right, "addtmp");
-    case BinOp::kSub: return builder.CreateSub(left, right, "subtmp");
-    case BinOp::kMul: return builder.CreateMul(left, right, "multmp");
-    case BinOp::kDiv: return builder.CreateSDiv(left, right, "sdivtmp");
+  if (name == "+") {
+    return builder.CreateAdd(left, right, "addtmp");
+  } else if (name == "-") {
+    return builder.CreateSub(left, right, "subtmp");
+  } else if (name == "*") {
+    return builder.CreateMul(left, right, "multmp");
+  } else if (name == "/") {
+    return builder.CreateSDiv(left, right, "sdivtmp");
+  } else {
+    return nullptr;
   }
 }
 
@@ -85,22 +90,18 @@ std::unique_ptr<Expr> Parser::parseExprPrimary(ParseError* err) {
   }
 }
 
-const std::map<std::string, BinOp> binOps{
-  {"+", BinOp::kAdd},
-  {"-", BinOp::kSub},
-  {"*", BinOp::kMul},
-  {"/", BinOp::kDiv},
+const std::map<std::string, u16> precedenceTable{
+  {"+", 0},
+  {"-", 0},
+  {"*", 1},
+  {"/", 1},
 };
 
-const std::map<BinOp, u16> precedenceTable{
-  {BinOp::kAdd, 0},
-  {BinOp::kSub, 0},
-  {BinOp::kMul, 1},
-  {BinOp::kDiv, 1},
-};
-
-unsigned precedence(const std::string& op) {
-  return lookupOrDie(precedenceTable, lookupOrDie(binOps, op));
+bool getPrecedence(const std::string& binOp, u16* precedence) {
+  auto it = precedenceTable.find(binOp);
+  if (it == precedenceTable.end()) { return false; }
+  *precedence = it->second;
+  return true;
 }
 
 std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
@@ -109,8 +110,9 @@ std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
   while (!atEnd()) {
     Token token = nextToken();
     std::string op = token.text().toString();
-    if (token.isNot(Token::kOperator) || !containsKey(binOps, op) ||
-        precedence(op) < minPrecedence) {
+    u16 precedence;
+    if (token.isNot(Token::kOperator) || !getPrecedence(op, &precedence) ||
+        precedence < minPrecedence) {
       break;
     }
     consumeToken();
@@ -120,17 +122,16 @@ std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
     while (!atEnd()) {
       Token token2 = nextToken();
       std::string op2 = token.text().toString();
-      if (token2.isNot(Token::kOperator) || !containsKey(binOps, op2) ||
-          precedence(op2) <= precedence(op)) {
+      u16 precedence2;
+      if (token2.isNot(Token::kOperator) || !getPrecedence(op2, &precedence2) ||
+          precedence2 <= precedence) {
         break;
       }
-      rhs = parseExprOperator(std::move(rhs), precedence(op2), err);
+      rhs = parseExprOperator(std::move(rhs), precedence2, err);
       if (!rhs) { return nullptr; }
     }
 
-    lhs = make_unique<BinOpExpr>(lookupOrDie(binOps, op),
-                                 std::move(lhs),
-                                 std::move(rhs));
+    lhs = make_unique<BinOpExpr>(op, std::move(lhs), std::move(rhs));
   }
 
   return lhs;
