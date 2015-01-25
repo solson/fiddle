@@ -9,19 +9,16 @@ extern "C" {
 
 namespace fiddle {
 
-class EL {
- public:
-  using PromptFnType = const char* (*)(EditLine*);
+struct EL {
+  EditLine* el;
+  std::string prompt = "> ";
 
   explicit EL(const char* program_name);
   ~EL();
 
-  void setPromptFn(PromptFnType prompt_fn);
   bool getLine(std::string* line);
- private:
-  EditLine* el;
 };
 
-}
+} // namespace fiddle
 
 #endif /* EDITLINE_H_ */
