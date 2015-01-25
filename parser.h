@@ -1,95 +1,97 @@
 #ifndef PARSER_H_
 #define PARSER_H_
 
+#include "lexer.h"
+#include <llvm/IR/Value.h>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <unicode/chariter.h>
-#include <llvm/IR/Value.h>
-
-#include <iostream>
 
 namespace fiddle {
 
-/*
-
-fn main() -> int {
-  return 3 + 3 * 13;
-}
-
-*/
-
-class Expr;
-
 // Abstract base class for expressions
-class Expr {
- public:
+struct Expr {
   virtual ~Expr() {}
-  virtual llvm::Value* Codegen() const = 0;
-  virtual void Debug() const = 0;
+  virtual llvm::Value* codegen() const = 0;
+  virtual void debug(std::ostream&) const = 0;
+  void debug() const { debug(std::cerr); }
 };
 
-class IntExpr : public Expr {
- public:
-  IntExpr(int val);
-  llvm::Value* Codegen() const override;
-  void Debug() const override {
-    std::cout << "IntExpr(" << val_ << ")";
+struct IntExpr : public Expr {
+  int val;
+
+  IntExpr(int val) : val(val) {}
+  llvm::Value* codegen() const override;
+  void debug(std::ostream& o) const override {
+    o << "Int(" << val << ")";
   }
- private:
-  int val_;
 };
 
 enum class BinOp {
   kAdd, kSub, kMul, kDiv
 };
 
-class BinOpExpr : public Expr {
- public:
-  BinOpExpr(BinOp op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs);
-  llvm::Value* Codegen() const override;
-  void Debug() const override {
-    std::cout << "BinOpExpr(" << int(op_) << ", ";
-    lhs_->Debug();
-    std::cout << ", ";
-    rhs_->Debug();
-    std::cout << ")";
+inline std::string binOpToString(BinOp op) {
+  switch (op) {
+    case BinOp::kAdd: return "+";
+    case BinOp::kSub: return "-";
+    case BinOp::kMul: return "*";
+    case BinOp::kDiv: return "/";
+    default: assert(false);
   }
- private:
-  BinOp op_;
-  std::unique_ptr<Expr> lhs_, rhs_;
-};
-
-class FuncDef {
- public:
-  FuncDef(std::string name,
-          std::unique_ptr<Expr> body);
- private:
-  std::unique_ptr<Expr> body_;
-};
-
-class Parser {
- public:
-  Parser(std::string source);
-
-  std::unique_ptr<FuncDef> parseFunction();
-  std::unique_ptr<Expr> parsePrimary();
-  std::unique_ptr<Expr> parseExpr1(std::unique_ptr<Expr> lhs,
-                                   unsigned min_precedence);
-  std::unique_ptr<Expr> parseExpr();
-  std::unique_ptr<IntExpr> parseInt();
-
- private:
-  void skipWhitespace();
-  char32_t peekChar();
-  char32_t nextChar();
-  bool atEnd() const;
-
-  const std::string source_;
-  int32_t position_ = 0, column_ = 1, line_ = 1;
-};
-
 }
 
-#endif /* PARSER_H_ */
+struct BinOpExpr : public Expr {
+  BinOp op;
+  std::unique_ptr<Expr> lhs, rhs;
+
+  BinOpExpr(BinOp op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs)
+      : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+
+  llvm::Value* codegen() const override;
+
+  void debug(std::ostream& o) const override {
+    o << "BinOp(" << binOpToString(op) << ", ";
+    lhs->debug(o);
+    o << ", ";
+    rhs->debug(o);
+    o << ")";
+  }
+};
+
+struct FuncDef {
+  std::unique_ptr<Expr> body;
+
+  FuncDef(std::string name, std::unique_ptr<Expr> body);
+};
+
+struct ParseError {
+  std::string message;
+};
+
+struct Parser {
+  Lexer lexer;
+  Token currToken;
+
+  explicit Parser(Lexer lexer) : lexer(std::move(lexer)) {
+    // Initialize currToken.
+    consumeToken();
+  }
+
+  std::unique_ptr<Expr> parseExpr(ParseError* err);
+  std::unique_ptr<Expr> parseExprPrimary(ParseError* err);
+  std::unique_ptr<Expr> parseExprOperator(std::unique_ptr<Expr> lhs,
+                                          u16 minPrecedence,
+                                          ParseError* err);
+
+  bool expectToken(Token::TokenKind expected, ParseError* err);
+  Token nextToken();
+  Token consumeToken();
+  bool atEnd() const;
+};
+
+} // namespace fiddle
+
+#endif /* PARSER_H */

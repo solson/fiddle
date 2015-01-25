@@ -1,131 +1,136 @@
 #include "parser.h"
-#include <cctype>
-#include <queue>
+#include "util.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
 #include <stack>
 #include <string>
 #include <utility>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/LLVMContext.h>
-#include <unicode/utf8.h>
-
-#include <iostream>
 
 namespace fiddle {
 
-IntExpr::IntExpr(int val) : val_(val) {}
-
-llvm::Value* IntExpr::Codegen() const {
+llvm::Value* IntExpr::codegen() const {
   return llvm::ConstantInt::get(llvm::getGlobalContext(),
-                                llvm::APInt(32, val_));
+                                llvm::APInt(32, val));
 }
 
-BinOpExpr::BinOpExpr(BinOp op,
-                     std::unique_ptr<Expr> lhs,
-                     std::unique_ptr<Expr> rhs)
-    : op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) {}
-
-llvm::Value* BinOpExpr::Codegen() const {
-  llvm::Value* left  = lhs_->Codegen();
-  llvm::Value* right = rhs_->Codegen();
+llvm::Value* BinOpExpr::codegen() const {
+  llvm::Value* left  = lhs->codegen();
+  llvm::Value* right = rhs->codegen();
   if (!left || !right) {
     return nullptr;
   }
 
-  llvm::IRBuilder<> b(llvm::getGlobalContext());
-  switch (op_) {
-    case BinOp::kAdd:
-      return b.CreateAdd(left, right, "addtmp");
-    case BinOp::kSub:
-      return b.CreateSub(left, right, "subtmp");
-    case BinOp::kMul:
-      return b.CreateMul(left, right, "multmp");
-    case BinOp::kDiv:
-      return b.CreateSDiv(left, right, "sdivtmp");
+  llvm::IRBuilder<> builder(llvm::getGlobalContext());
+  switch (op) {
+    case BinOp::kAdd: return builder.CreateAdd(left, right, "addtmp");
+    case BinOp::kSub: return builder.CreateSub(left, right, "subtmp");
+    case BinOp::kMul: return builder.CreateMul(left, right, "multmp");
+    case BinOp::kDiv: return builder.CreateSDiv(left, right, "sdivtmp");
   }
 }
 
-Parser::Parser(std::string source) : source_(std::move(source)) {}
+// TODO(tsion): Remove this.
+bool isDigit(char c);
 
-std::unique_ptr<FuncDef> Parser::parseFunction() {
-  return nullptr;
+i64 digitToInt(char c) {
+  assert(isDigit(c));
+  return c - '0';
 }
 
-std::unique_ptr<Expr> Parser::parsePrimary() {
-  skipWhitespace();
-  if (atEnd()) {
-    // TODO: parse error
-    return nullptr;
+// TODO(tsion): Detect integer overflow.
+bool parseInt(StringRef str, i64* result, ParseError* err) {
+  *result = 0;
+  i64 base = 1;
+  for (int i = str.length - 1; i >= 0; --i) {
+    if (!isDigit(str[i])) {
+      err->message = "non-decimal digit in integer literal";
+      return false;
+    }
+    *result += base * digitToInt(str[i]);
+    base *= 10;
   }
+  return true;
+}
 
-  char32_t c = peekChar();
-  if (std::isdigit(c)) {
-    return parseInt();
-  } else if (c == '(') {
-    std::unique_ptr<Expr> e = parseExpr();
-    // expect ')'
-    return e;
-  } else {
-    return nullptr;
+std::unique_ptr<Expr> Parser::parseExpr(ParseError* err) {
+  auto expr = parseExprPrimary(err);
+  if (!expr) { return nullptr; }
+  return parseExprOperator(std::move(expr), 0, err);
+}
+
+std::unique_ptr<Expr> Parser::parseExprPrimary(ParseError* err) {
+  Token token = nextToken();
+  switch (token.kind) {
+    case Token::kInvalid:
+      err->message = "invalid token";
+      return nullptr;
+    case Token::kEOF:
+      err->message = "unexpected end of file";
+      return nullptr;
+    case Token::kInteger:
+      i64 value;
+      if (!parseInt(token.text(), &value, err)) { return nullptr; }
+      consumeToken();
+      return make_unique<IntExpr>(value);
+    case Token::kParenLeft: {
+      consumeToken();
+      auto e = parseExpr(err);
+      if (!expectToken(Token::kParenRight, err)) { return nullptr; }
+      return e;
+    }
+    default:
+      err->message = "unexpected token";
+      return nullptr;
   }
 }
 
-// TODO: strings, not chars
-std::map<char32_t, BinOp> bin_ops{
-  {'+', BinOp::kAdd},
-  {'-', BinOp::kSub},
-  {'*', BinOp::kMul},
-  {'/', BinOp::kDiv},
+const std::map<std::string, BinOp> binOps{
+  {"+", BinOp::kAdd},
+  {"-", BinOp::kSub},
+  {"*", BinOp::kMul},
+  {"/", BinOp::kDiv},
 };
 
-std::map<BinOp, unsigned> precedence_table{
+const std::map<BinOp, u16> precedenceTable{
   {BinOp::kAdd, 0},
   {BinOp::kSub, 0},
   {BinOp::kMul, 1},
   {BinOp::kDiv, 1},
 };
 
-// TODO: move to utils header
-template <typename T>
-typename T::mapped_type lookupOrDie(const T& t, const typename T::key_type& k) {
-  return t.find(k)->second;
+unsigned precedence(const std::string& op) {
+  return lookupOrDie(precedenceTable, lookupOrDie(binOps, op));
 }
 
-template <typename T>
-bool containsKey(const T& t, const typename T::key_type& k) {
-  return t.find(k) != t.end();
-}
-
-BinOp binOp(char32_t c) {
-  return lookupOrDie(bin_ops, c);
-}
-
-unsigned precedence(char32_t c) {
-  return lookupOrDie(precedence_table, lookupOrDie(bin_ops, c));
-}
-
-std::unique_ptr<Expr> Parser::parseExpr1(std::unique_ptr<Expr> lhs,
-                                         unsigned min_precedence) {
+std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
+                                                u16 minPrecedence,
+                                                ParseError* err) {
   while (!atEnd()) {
-    skipWhitespace();
-    char32_t c = peekChar();
-    if (!containsKey(bin_ops, c) || precedence(c) < min_precedence) {
+    Token token = nextToken();
+    std::string op = token.text().toString();
+    if (token.isNot(Token::kOperator) || !containsKey(binOps, op) ||
+        precedence(op) < minPrecedence) {
       break;
     }
-    nextChar();
-    std::unique_ptr<Expr> rhs = parsePrimary();
+    consumeToken();
+    auto rhs = parseExprPrimary(err);
+    if (!rhs) { return nullptr; }
 
     while (!atEnd()) {
-      skipWhitespace();
-      char32_t c2 = peekChar();
-      if (!containsKey(bin_ops, c) || precedence(c2) <= precedence(c)) {
+      Token token2 = nextToken();
+      std::string op2 = token.text().toString();
+      if (token2.isNot(Token::kOperator) || !containsKey(binOps, op2) ||
+          precedence(op2) <= precedence(op)) {
         break;
       }
-      rhs = parseExpr1(std::move(rhs), precedence(c2));
+      rhs = parseExprOperator(std::move(rhs), precedence(op2), err);
+      if (!rhs) { return nullptr; }
     }
 
-    lhs = std::unique_ptr<Expr>(
-        new BinOpExpr(binOp(c), std::move(lhs), std::move(rhs)));
+    lhs = make_unique<BinOpExpr>(lookupOrDie(binOps, op),
+                                 std::move(lhs),
+                                 std::move(rhs));
   }
 
   return lhs;
@@ -142,67 +147,30 @@ std::unique_ptr<Expr> Parser::parseExpr1(std::unique_ptr<Expr> lhs,
   // return lhs
 }
 
-std::unique_ptr<Expr> Parser::parseExpr() {
-  return parseExpr1(parsePrimary(), 0);
-}
-
-std::unique_ptr<IntExpr> Parser::parseInt() {
-  std::string buf;
-  while (!atEnd()) {
-    char32_t c = peekChar();
-    if (!std::isdigit(c)) {
-      break;
-    }
-    buf.push_back(c);
-    nextChar();
+bool Parser::expectToken(Token::TokenKind expected, ParseError* err) {
+  Token token = nextToken();
+  if (token.kind == expected) {
+    consumeToken();
+    return true;
   }
-
-  // TODO: Handle overflow from stoi
-  return std::unique_ptr<IntExpr>(new IntExpr(std::stoi(buf)));
+  // TODO(tsion): Fix the extreme vagueness of this message.
+  err->message = "expected one token kind but got another";
+  return false;
 }
 
-void Parser::skipWhitespace() {
-  while (!atEnd()) {
-    char32_t c = peekChar();
-    if (!std::isspace(c)) {
-      return;
-    }
-    nextChar();
-  }
+Token Parser::nextToken() {
+  return currToken;
 }
 
-char32_t Parser::peekChar() {
-  int32_t position_before = position_;
-
-  const char* string = source_.data();
-  int32_t length = source_.length();
-  char32_t c;
-  U8_NEXT(string, position_, length, c);
-
-  position_ = position_before;
-  return c;
-}
-
-char32_t Parser::nextChar() {
-  const char* string = source_.data();
-  int32_t length = source_.length();
-  char32_t c;
-  U8_NEXT(string, position_, length, c);
-
-  // TODO: Check for error condition (negative c).
-
-  if (c == '\n') {
-    ++line_;
-    column_ = 0;
-  } else {
-    column_++;
-  }
-
-  return c;
+Token Parser::consumeToken() {
+  assert(!atEnd());
+  currToken = lexer.nextToken();
+  std::cerr << "token: " << currToken << '\n';
+  return currToken;
 }
 
 bool Parser::atEnd() const {
-  return static_cast<size_t>(position_) == source_.length();
+  return currToken.is(Token::kEOF);
 }
 
-}
+} // namespace fiddle
