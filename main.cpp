@@ -10,7 +10,7 @@ using namespace fiddle;
 using namespace llvm;
 
 void runTest(const char* source) {
-  Lexer lexer{SourceFile{"<file>", source}};
+  Lexer lexer{SourceFile{"<test>", source}};
   ParseError err;
   auto expr = Parser(std::move(lexer)).parseExpr(&err);
   if (!expr) {
@@ -20,6 +20,17 @@ void runTest(const char* source) {
   expr->debug();
   std::cout << '\n';
   expr->codegen()->dump();
+}
+
+void runFnTest(const char* source) {
+  Lexer lexer{SourceFile{"<test>", source}};
+  ParseError err;
+  auto fn = Parser(std::move(lexer)).parseFuncDef(&err);
+  if (!fn) {
+    std::cout << "error: " << err.message << "\n";
+    return;
+  }
+  std::cerr << *fn << '\n';
 }
 
 void runTests() {
@@ -49,7 +60,8 @@ int main(int argc, char** argv) {
       runTests();
       continue;
     }
-    runTest(line.c_str());
+    // runTest(line.c_str());
+    runFnTest(line.c_str());
   }
 
   return 0;

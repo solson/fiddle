@@ -58,6 +58,41 @@ bool parseInt(StringRef str, i64* result, ParseError* err) {
   return true;
 }
 
+std::unique_ptr<FuncDef> Parser::parseFuncDef(ParseError* err) {
+  if (!expectToken(Token::kKeywordFn, err)) { return nullptr; }
+  Token name = nextToken();
+  if (name.isNot(Token::kIdentifier)) {
+    err->message = "expected function name after 'fn' keyword";
+    return nullptr;
+  }
+  consumeToken();
+  if (!expectToken(Token::kParenLeft, err)) { return nullptr; }
+  std::vector<std::string> argNames;
+  while (true) {
+    Token token = nextToken();
+    if (token.is(Token::kParenRight)) {
+      consumeToken();
+      break;
+    }
+    token = nextToken();
+    if (token.isNot(Token::kIdentifier)) {
+      err->message = "expected argument name in fn argument list";
+      return nullptr;
+    }
+    argNames.push_back(token.text().toString());
+    consumeToken();
+    token = nextToken();
+    if (token.is(Token::kComma)) { consumeToken(); }
+  }
+  if (!expectToken(Token::kBraceLeft, err)) { return nullptr; }
+  auto body = parseExpr(err);
+  if (!body) { return nullptr; }
+  if (!expectToken(Token::kBraceRight, err)) { return nullptr; }
+  return make_unique<FuncDef>(name.text().toString(),
+                              std::move(body),
+                              std::move(argNames));
+}
+
 std::unique_ptr<Expr> Parser::parseExpr(ParseError* err) {
   auto expr = parseExprPrimary(err);
   if (!expr) { return nullptr; }
