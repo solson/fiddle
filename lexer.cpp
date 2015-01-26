@@ -62,6 +62,7 @@ Token Lexer::nextToken() {
         case '}': kind = Token::kBraceRight;   break;
         case '[': kind = Token::kBracketLeft;  break;
         case ']': kind = Token::kBracketRight; break;
+        case ',': kind = Token::kComma;        break;
         default:  kind = Token::kInvalid;
       }
       consumeChar();

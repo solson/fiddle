@@ -44,7 +44,8 @@ struct Token {
     kBraceLeft,
     kBraceRight,
     kBracketLeft,
-    kBracketRight
+    kBracketRight,
+    kComma
   };
 
   TokenKind kind;
