@@ -17,8 +17,7 @@ void runTest(const char* source) {
     std::cout << "error: " << err.message << "\n";
     return;
   }
-  expr->debug();
-  std::cout << '\n';
+  std::cout << *expr << '\n';
   expr->codegen()->dump();
 }
 
@@ -30,7 +29,8 @@ void runFnTest(const char* source) {
     std::cout << "error: " << err.message << "\n";
     return;
   }
-  std::cerr << *fn << '\n';
+  std::cout << *fn << '\n';
+  std::cout << source << '\n';
 }
 
 void runTests() {
@@ -51,6 +51,10 @@ void runTests() {
 
 int main(int argc, char** argv) {
   cl::ParseCommandLineOptions(argc, argv);
+
+  runFnTest("fn foo(x, y) { 1 + 2 }");
+  return 0;
+
   EL editline(argv[0]);
   editline.prompt = "fiddle> ";
 

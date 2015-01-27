@@ -15,16 +15,20 @@ namespace fiddle {
 struct Expr {
   virtual ~Expr() {}
   virtual llvm::Value* codegen() const = 0;
-  virtual void debug(std::ostream&) const = 0;
-  void debug() const { debug(std::cerr); }
+  virtual void print(std::ostream&) const = 0;
 };
+
+inline std::ostream& operator<<(std::ostream& o, const Expr& expr) {
+  expr.print(o);
+  return o;
+}
 
 struct IntExpr : public Expr {
   int val;
 
   IntExpr(int val) : val(val) {}
   llvm::Value* codegen() const override;
-  void debug(std::ostream& o) const override {
+  void print(std::ostream& o) const override {
     o << "Int(" << val << ")";
   }
 };
@@ -39,13 +43,8 @@ struct BinOpExpr : public Expr {
       : name(std::move(name)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
   llvm::Value* codegen() const override;
-
-  void debug(std::ostream& o) const override {
-    o << "BinOp(" << name << ", ";
-    lhs->debug(o);
-    o << ", ";
-    rhs->debug(o);
-    o << ")";
+  void print(std::ostream& o) const override {
+    o << "BinOp(" << name << ", " << *lhs << ", " << *rhs << ")";
   }
 };
 
@@ -61,9 +60,7 @@ struct FuncDef {
 };
 
 inline std::ostream& operator<<(std::ostream& o, const FuncDef& fn) {
-  o << "FuncDef(name = " << fn.name << ", body = ";
-  fn.body->debug(o);
-  o << ", args = {";
+  o << "FuncDef(name = " << fn.name << ", body = " << *fn.body << ", args = {";
   for (int i = 0, len = fn.args.size(); i < len; ++i) {
     if (i != 0) { o << ", "; }
     o << fn.args[i];
