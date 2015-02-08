@@ -1,6 +1,7 @@
 #ifndef PARSER_H_
 #define PARSER_H_
 
+#include "diagnostic.h"
 #include "lexer.h"
 #include <llvm/IR/Value.h>
 #include <cstdint>
@@ -30,6 +31,18 @@ struct IntExpr : public Expr {
   llvm::Value* codegen() const override;
   void print(std::ostream& o) const override {
     o << "Int(" << val << ")";
+  }
+};
+
+struct VarExpr : public Expr {
+  std::string name;
+
+  VarExpr(std::string name) : name(std::move(name)) {}
+  llvm::Value* codegen() const override {
+    return nullptr;
+  }
+  void print(std::ostream& o) const override {
+    o << "Var(" << name << ")";
   }
 };
 
@@ -69,30 +82,32 @@ inline std::ostream& operator<<(std::ostream& o, const FuncDef& fn) {
   return o;
 }
 
-struct ParseError {
-  std::string message;
-};
-
 struct Parser {
+  std::shared_ptr<SourceFile> sourceFile;
+  std::vector<Diagnostic> diagnostics;
   Lexer lexer;
   Token currToken;
 
-  explicit Parser(Lexer lexer) : lexer(std::move(lexer)) {
+  explicit Parser(SourceFile file)
+      : sourceFile(std::make_shared<SourceFile>(std::move(file))),
+        diagnostics(),
+        lexer(sourceFile, diagnostics) {
     // Initialize currToken.
     consumeToken();
   }
 
-  std::unique_ptr<FuncDef> parseFuncDef(ParseError* err);
-  std::unique_ptr<Expr> parseExpr(ParseError* err);
-  std::unique_ptr<Expr> parseExprPrimary(ParseError* err);
+  // std::unique_ptr<Module> parseModule();
+  std::unique_ptr<FuncDef> parseFuncDef();
+  std::unique_ptr<Expr> parseExpr();
+  std::unique_ptr<Expr> parseExprPrimary();
   std::unique_ptr<Expr> parseExprOperator(std::unique_ptr<Expr> lhs,
-                                          u16 minPrecedence,
-                                          ParseError* err);
+                                          u8 minPrecedence);
 
-  bool expectToken(Token::TokenKind expected, ParseError* err);
   Token nextToken();
   Token consumeToken();
   bool atEnd() const;
+  bool expectToken(Token::TokenKind expected);
+  void report(Diagnostic::DiagnosticLevel level, StringRef message);
 };
 
 } // namespace fiddle

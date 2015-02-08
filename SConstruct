@@ -45,6 +45,7 @@ env.Program(
     'lexer.cpp',
     'main.cpp',
     'parser.cpp',
+    'token.cpp',
   ],
 )
 
