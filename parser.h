@@ -10,13 +10,18 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace fiddle {
+
+struct FuncDef;
 
 // Abstract base class for expressions
 struct Expr {
   virtual ~Expr() {}
-  virtual llvm::Value* codegen() const = 0;
+  virtual llvm::Value* codegen(
+      llvm::BasicBlock*,
+      const std::unordered_map<std::string, llvm::Value*>&) const = 0;
   virtual void print(std::ostream&) const = 0;
 };
 
@@ -29,7 +34,9 @@ struct IntExpr : public Expr {
   int val;
 
   IntExpr(int val) : val(val) {}
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen(
+      llvm::BasicBlock*,
+      const std::unordered_map<std::string, llvm::Value*>&) const override;
   void print(std::ostream& o) const override {
     o << "Int(" << val << ")";
   }
@@ -39,9 +46,9 @@ struct VarExpr : public Expr {
   std::string name;
 
   VarExpr(std::string name) : name(std::move(name)) {}
-  llvm::Value* codegen() const override {
-    return nullptr;
-  }
+  llvm::Value* codegen(
+      llvm::BasicBlock*,
+      const std::unordered_map<std::string, llvm::Value*>&) const override;
   void print(std::ostream& o) const override {
     o << "Var(" << name << ")";
   }
@@ -56,7 +63,9 @@ struct BinOpExpr : public Expr {
             std::unique_ptr<Expr> rhs)
       : name(std::move(name)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
-  llvm::Value* codegen() const override;
+  llvm::Value* codegen(
+      llvm::BasicBlock*,
+      const std::unordered_map<std::string, llvm::Value*>&) const override;
   void print(std::ostream& o) const override {
     o << "BinOp(" << name << ", " << *lhs << ", " << *rhs << ")";
   }

@@ -19,25 +19,8 @@ void compile(FuncDef* func) {
   module.dump();
 }
 
-void runTest(const char* source) {
-  Parser parser{SourceFile{"<test>", source}};
-  auto expr = parser.parseExpr();
-  for (const auto& diag : parser.diagnostics) {
-    std::cout << diag;
-  }
-
-  if (!expr) { return; }
-  std::cout << *expr << '\n';
-  expr->codegen()->dump();
-}
-
-void runFnTest(const char* filename) {
-  std::ifstream file(filename);
-  std::stringstream buffer;
-  buffer << file.rdbuf();
-  std::string source = buffer.str();
-
-  Parser parser{SourceFile{"<test>", source}};
+void runFnTest(std::string filename, std::string source) {
+  Parser parser{SourceFile{filename, source}};
   auto fn = parser.parseFuncDef();
   for (const auto& diag : parser.diagnostics) {
     std::cout << diag;
@@ -61,17 +44,19 @@ void runTests() {
   };
 
   for (auto test : tests) {
-    runTest(test);
+    // runTest(test);
   }
 }
 
 int main(int argc, char** argv) {
   if (argc == 2) {
-    runFnTest(argv[1]);
+    const char* filename = argv[1];
+    std::ifstream file(filename);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    runFnTest(filename, buffer.str());
     return 0;
   }
-
-  // runFnTest("fn doubleSum(x, y) { (x + y) * 2 }");
 
   EL editline(argv[0]);
   editline.prompt = "fiddle> ";
@@ -82,7 +67,7 @@ int main(int argc, char** argv) {
       runTests();
       continue;
     }
-    runTest(line.c_str());
+    runFnTest("<repl>", line.c_str());
   }
 
   return 0;

@@ -10,19 +10,31 @@
 
 namespace fiddle {
 
-llvm::Value* IntExpr::codegen() const {
+llvm::Value* IntExpr::codegen(
+    llvm::BasicBlock*,
+    const std::unordered_map<std::string, llvm::Value*>&) const {
   return llvm::ConstantInt::get(llvm::getGlobalContext(),
                                 llvm::APInt(32, val));
 }
 
-llvm::Value* BinOpExpr::codegen() const {
-  llvm::Value* left  = lhs->codegen();
-  llvm::Value* right = rhs->codegen();
+llvm::Value* VarExpr::codegen(
+    llvm::BasicBlock*,
+    const std::unordered_map<std::string, llvm::Value*>& argValues) const {
+  auto it = argValues.find(name);
+  if (it == argValues.end()) { return nullptr; }
+  return it->second;
+}
+
+llvm::Value* BinOpExpr::codegen(
+    llvm::BasicBlock* block,
+    const std::unordered_map<std::string, llvm::Value*>& argValues) const {
+  llvm::Value* left  = lhs->codegen(block, argValues);
+  llvm::Value* right = rhs->codegen(block, argValues);
   if (!left || !right) {
     return nullptr;
   }
 
-  llvm::IRBuilder<> builder(llvm::getGlobalContext());
+  llvm::IRBuilder<> builder{block};
   if (name == "+") {
     return builder.CreateAdd(left, right, "addtmp");
   } else if (name == "-") {
@@ -39,13 +51,24 @@ llvm::Value* BinOpExpr::codegen() const {
 void FuncDef::codegen(llvm::Module* module) const {
   using namespace llvm;
 
-  Type* returnType = IntegerType::get(module->getContext(), 32);
+  Type* i32Type = IntegerType::get(module->getContext(), 32);
+  std::vector<Type*> argTypes{args.size(), i32Type};
 
   Function* func = Function::Create(
-      FunctionType::get(returnType, false),
+      FunctionType::get(i32Type, argTypes, false),
       GlobalValue::ExternalLinkage,
       name,
       module);
+
+  std::unordered_map<std::string, Value*> argumentValues;
+
+  usize i = 0;
+  for (Function::arg_iterator it = func->arg_begin();
+       i != args.size();
+       ++it, ++i) {
+    it->setName(args[i]);
+    argumentValues[args[i]] = it;
+  }
 
   BasicBlock* entryBlock = BasicBlock::Create(
       module->getContext(),
@@ -54,7 +77,7 @@ void FuncDef::codegen(llvm::Module* module) const {
       nullptr);
 
   IRBuilder<> builder{entryBlock};
-  builder.CreateRet(body->codegen());
+  builder.CreateRet(body->codegen(entryBlock, argumentValues));
 }
 
 // std::vector<std::unique_ptr<FuncDef>> Parser::parseFuncDefs() {

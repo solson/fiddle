@@ -69,12 +69,12 @@ std::unique_ptr<T> make_unique(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-template <typename T>
+template<typename T>
 typename T::mapped_type lookupOrDie(const T& t, const typename T::key_type& k) {
   return t.find(k)->second;
 }
 
-template <typename T>
+template<typename T>
 bool containsKey(const T& t, const typename T::key_type& k) {
   return t.find(k) != t.end();
 }
