@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "util.h"
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
@@ -33,6 +34,27 @@ llvm::Value* BinOpExpr::codegen() const {
   } else {
     return nullptr;
   }
+}
+
+void FuncDef::codegen(llvm::Module* module) const {
+  using namespace llvm;
+
+  Type* returnType = IntegerType::get(module->getContext(), 32);
+
+  Function* func = Function::Create(
+      FunctionType::get(returnType, false),
+      GlobalValue::ExternalLinkage,
+      name,
+      module);
+
+  BasicBlock* entryBlock = BasicBlock::Create(
+      module->getContext(),
+      "entry-block",
+      func,
+      nullptr);
+
+  IRBuilder<> builder{entryBlock};
+  builder.CreateRet(body->codegen());
 }
 
 // std::vector<std::unique_ptr<FuncDef>> Parser::parseFuncDefs() {

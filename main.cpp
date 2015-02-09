@@ -1,6 +1,9 @@
 #include "editline.h"
 #include "lexer.h"
 #include "parser.h"
+#include "util.h"
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,6 +12,12 @@
 
 using namespace fiddle;
 using namespace llvm;
+
+void compile(FuncDef* func) {
+  Module module{"fiddle", getGlobalContext()};
+  func->codegen(&module);
+  module.dump();
+}
 
 void runTest(const char* source) {
   Parser parser{SourceFile{"<test>", source}};
@@ -37,6 +46,7 @@ void runFnTest(const char* filename) {
   if (!fn) { return; }
   std::cout << *fn << '\n';
   std::cout << source << '\n';
+  compile(fn.get());
 }
 
 void runTests() {
