@@ -122,7 +122,7 @@ std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
 
     while (!atEnd()) {
       Token token2 = nextToken();
-      std::string op2 = token.text().toString();
+      std::string op2 = token2.text().toString();
       u8 precedence2;
       if (token2.isNot(Token::kOperator) || !getPrecedence(op2, &precedence2) ||
           precedence2 <= precedence) {
