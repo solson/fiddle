@@ -1,0 +1,3 @@
+fn sum_squares(x, y) {
+  x * x + y * y
+}

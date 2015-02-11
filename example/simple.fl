@@ -1,0 +1,3 @@
+fn main(argc, argv) {
+  10 * 4 + 2
+}
