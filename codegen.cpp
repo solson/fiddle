@@ -63,7 +63,7 @@ void FuncDef::codegen(llvm::Module* module) const {
 
   BasicBlock* entryBlock = BasicBlock::Create(
       module->getContext(),
-      "entry-block",
+      "entry",
       func,
       nullptr);
 
@@ -73,5 +73,11 @@ void FuncDef::codegen(llvm::Module* module) const {
   IRBuilder<> builder{entryBlock};
   builder.CreateRet(result);
 }
+
+void Module::codegen(llvm::Module* module) const {
+  for (const auto& fn : functions) {
+    fn.codegen(module);
+  }
+};
 
 } // namespace fiddle

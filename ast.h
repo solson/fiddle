@@ -83,6 +83,21 @@ inline std::ostream& operator<<(std::ostream& o, const FuncDef& fn) {
   return o;
 }
 
+struct Module {
+  std::vector<FuncDef> functions;
+
+  Module(std::vector<FuncDef> functions) : functions(std::move(functions)) {}
+  void codegen(llvm::Module* module) const;
+};
+
+inline std::ostream& operator<<(std::ostream& o, const Module& module) {
+  o << "Module\n";
+  for (const auto& fn : module.functions) {
+    o << "  " << fn << '\n';
+  }
+  return o;
+}
+
 } // namespace fiddle
 
 #endif /* AST_H_ */

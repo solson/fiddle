@@ -5,17 +5,17 @@
 
 namespace fiddle {
 
-// std::vector<std::unique_ptr<FuncDef>> Parser::parseFuncDefs() {
-//   std::vector<std::unique_ptr<FuncDef>> fns;
-//   while (!atEnd()) {
-//     Token token = nextToken();
-//     if (token.isNot(Token::kKeywordFn)) { break; }
-//     auto fn = parseFuncDef();
-//     if (!fn) { break }
-//     fns.push_back(std::move(fn));
-//   }
-//   return fns;
-// }
+std::unique_ptr<Module> Parser::parseModule() {
+  std::vector<FuncDef> fns;
+  while (!atEnd()) {
+    Token token = nextToken();
+    if (token.isNot(Token::kKeywordFn)) { break; }
+    auto fn = parseFuncDef();
+    if (!fn) { break; }
+    fns.push_back(std::move(*fn));
+  }
+  return make_unique<Module>(std::move(fns));
+}
 
 std::unique_ptr<FuncDef> Parser::parseFuncDef() {
   if (!expectToken(Token::kKeywordFn)) { return nullptr; }

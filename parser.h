@@ -26,7 +26,7 @@ struct Parser {
     consumeToken();
   }
 
-  // std::unique_ptr<Module> parseModule();
+  std::unique_ptr<Module> parseModule();
   std::unique_ptr<FuncDef> parseFuncDef();
   std::unique_ptr<Expr> parseExpr();
   std::unique_ptr<Expr> parseExprPrimary();

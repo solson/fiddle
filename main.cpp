@@ -13,23 +13,23 @@
 using namespace fiddle;
 using namespace llvm;
 
-void compile(FuncDef* func) {
-  Module module{"fiddle", getGlobalContext()};
-  func->codegen(&module);
-  module.dump();
+void compile(const fiddle::Module& module) {
+  llvm::Module llvmModule{"fiddle", getGlobalContext()};
+  module.codegen(&llvmModule);
+  llvmModule.dump();
 }
 
 void runFnTest(std::string filename, std::string source) {
   Parser parser{SourceFile{filename, source}};
-  auto fn = parser.parseFuncDef();
+  auto module = parser.parseModule();
   for (const auto& diag : parser.diagnostics) {
     std::cout << diag;
   }
 
-  if (!fn) { return; }
-  std::cout << *fn << '\n';
+  if (!module) { return; }
+  std::cout << *module << '\n';
   std::cout << source << '\n';
-  compile(fn.get());
+  compile(*module);
 }
 
 void runTests() {

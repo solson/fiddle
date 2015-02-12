@@ -1,0 +1,11 @@
+fn sum_squares(x, y) {
+  x * x + y * y
+}
+
+fn add(x, y) {
+  x + y
+}
+
+fn main(argc, argv) {
+  argc - 1
+}
