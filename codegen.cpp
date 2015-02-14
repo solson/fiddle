@@ -74,10 +74,12 @@ void FuncDef::codegen(llvm::Module* module) const {
   builder.CreateRet(result);
 }
 
-void Module::codegen(llvm::Module* module) const {
+std::unique_ptr<llvm::Module> Module::codegen() const {
+  auto module = make_unique<llvm::Module>("fiddle", llvm::getGlobalContext());
   for (const auto& fn : functions) {
-    fn.codegen(module);
+    fn.codegen(module.get());
   }
+  return module;
 };
 
 } // namespace fiddle

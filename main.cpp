@@ -13,12 +13,6 @@
 using namespace fiddle;
 using namespace llvm;
 
-void compile(const fiddle::Module& module) {
-  llvm::Module llvmModule{"fiddle", getGlobalContext()};
-  module.codegen(&llvmModule);
-  llvmModule.dump();
-}
-
 void runFnTest(std::string filename, std::string source) {
   Parser parser{SourceFile{filename, source}};
   auto module = parser.parseModule();
@@ -29,7 +23,7 @@ void runFnTest(std::string filename, std::string source) {
   if (!module) { return; }
   std::cout << *module << '\n';
   std::cout << source << '\n';
-  compile(*module);
+  module->codegen()->dump();
 }
 
 void runTests() {

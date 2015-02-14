@@ -87,7 +87,7 @@ struct Module {
   std::vector<FuncDef> functions;
 
   Module(std::vector<FuncDef> functions) : functions(std::move(functions)) {}
-  void codegen(llvm::Module* module) const;
+  std::unique_ptr<llvm::Module> codegen() const;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Module& module) {
