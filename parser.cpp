@@ -21,7 +21,8 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
   if (!expectToken(Token::kKeywordFn)) { return nullptr; }
   Token name = nextToken();
   if (name.isNot(Token::kIdentifier)) {
-    report(Diagnostic::kError, "expected function name after 'fn' keyword");
+    report(Diagnostic::kError, "expected function name after 'fn' keyword",
+           name);
     return nullptr;
   }
   consumeToken();
@@ -35,7 +36,8 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
     }
     token = nextToken();
     if (token.isNot(Token::kIdentifier)) {
-      report(Diagnostic::kError, "expected argument name in fn argument list");
+      report(Diagnostic::kError, "expected argument name in fn argument list",
+             token);
       return nullptr;
     }
     argNames.push_back(token.text().toString());
@@ -62,13 +64,13 @@ std::unique_ptr<Expr> Parser::parseExprPrimary() {
   Token token = nextToken();
   switch (token.kind) {
     case Token::kInvalid:
-      report(Diagnostic::kError, "invalid token");
+      report(Diagnostic::kError, "invalid token", token);
       // Skip past the invalid token and keep trying to parse an expression.
       consumeToken();
       return parseExprPrimary();
 
     case Token::kEOF:
-      report(Diagnostic::kError, "unexpected end of file");
+      report(Diagnostic::kError, "unexpected end of file", token);
       return nullptr;
 
     case Token::kInteger:
@@ -87,7 +89,7 @@ std::unique_ptr<Expr> Parser::parseExprPrimary() {
     }
 
     default:
-      report(Diagnostic::kError, "unexpected token");
+      report(Diagnostic::kError, "unexpected token", token);
       return nullptr;
   }
 }
@@ -160,12 +162,14 @@ bool Parser::expectToken(Token::TokenKind expected) {
     return true;
   }
   // TODO(tsion): Fix the extreme vagueness of this message.
-  report(Diagnostic::kError, "expected one token kind but got another");
+  report(Diagnostic::kError, "expected one token kind but got another", token);
   return false;
 }
 
-void Parser::report(Diagnostic::DiagnosticLevel level, StringRef message) {
-  diagnostics.emplace_back(Diagnostic{level, message.toString()});
+void Parser::report(Diagnostic::DiagnosticLevel level, StringRef message,
+                    const Token& token) {
+  diagnostics.emplace_back(
+      Diagnostic{level, message.toString(), token.location});
 }
 
 } // namespace fiddle

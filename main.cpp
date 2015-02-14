@@ -57,7 +57,10 @@ int main(int argc, char** argv) {
 
   std::string line;
   while (editline.getLine(&line)) {
-    if (line == ".tests\n") {
+    // Strip the newline.
+    line.pop_back();
+
+    if (line == ".tests") {
       runTests();
       continue;
     }

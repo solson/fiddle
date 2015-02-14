@@ -37,7 +37,8 @@ struct Parser {
   Token consumeToken();
   bool atEnd() const;
   bool expectToken(Token::TokenKind expected);
-  void report(Diagnostic::DiagnosticLevel level, StringRef message);
+  void report(Diagnostic::DiagnosticLevel level, StringRef message,
+              const Token& token);
 };
 
 } // namespace fiddle
