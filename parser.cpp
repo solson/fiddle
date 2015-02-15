@@ -62,13 +62,16 @@ std::unique_ptr<Expr> Parser::parseExpr() {
 }
 
 std::unique_ptr<Expr> Parser::parseExprPrimary() {
+  std::unique_ptr<Expr> expr;
   Token token = currToken;
+
   switch (token.kind) {
     case Token::kInvalid:
       report(Diagnostic::kError, "invalid token", token);
       // Skip past the invalid token and keep trying to parse an expression.
       consumeToken();
-      return parseExprPrimary();
+      expr = parseExprPrimary();
+      break;
 
     case Token::kEOF:
       report(Diagnostic::kError, "unexpected end of file", token);
@@ -76,23 +79,45 @@ std::unique_ptr<Expr> Parser::parseExprPrimary() {
 
     case Token::kInteger:
       consumeToken();
-      return make_unique<IntExpr>(token.intValue);
+      expr = make_unique<IntExpr>(token.intValue);
+      break;
 
     case Token::kIdentifier:
       consumeToken();
-      return make_unique<VarExpr>(token.text().toString());
+      expr = make_unique<VarExpr>(token.text().toString());
+      break;
 
-    case Token::kParenLeft: {
+    case Token::kParenLeft:
       consumeToken();
-      auto e = parseExpr();
+      expr = parseExpr();
       if (!expectToken(Token::kParenRight)) { return nullptr; }
-      return e;
-    }
+      break;
 
     default:
       report(Diagnostic::kError, "unexpected token", token);
       return nullptr;
   }
+
+  // Parse function call expressions.
+  if (currToken.kind == Token::kParenLeft) {
+    consumeToken();
+    std::vector<std::unique_ptr<Expr>> argumentExprs;
+
+    while (true) {
+      if (currToken.kind == Token::kParenRight) {
+        consumeToken();
+        break;
+      }
+      auto argumentExpr = parseExpr();
+      if (!argumentExpr) { return nullptr; }
+      argumentExprs.push_back(std::move(argumentExpr));
+      if (currToken.kind == Token::kComma) { consumeToken(); }
+    }
+
+    return make_unique<FuncCallExpr>(std::move(expr), std::move(argumentExprs));
+  }
+
+  return expr;
 }
 
 const std::map<std::string, u8> kPrecedenceTable{

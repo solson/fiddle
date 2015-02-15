@@ -39,6 +39,11 @@ llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
   }
 }
 
+llvm::Value* FuncCallExpr::codegen(CodegenContext* context) const {
+  // TODO(tsion): Implement this.
+  return nullptr;
+}
+
 void FuncDef::codegen(llvm::Module* module) const {
   using namespace llvm;
 

@@ -60,6 +60,26 @@ struct BinOpExpr : public Expr {
   }
 };
 
+struct FuncCallExpr : public Expr {
+  std::unique_ptr<Expr> functionExpr;
+  std::vector<std::unique_ptr<Expr>> argumentExprs;
+
+  FuncCallExpr(std::unique_ptr<Expr> functionExpr,
+               std::vector<std::unique_ptr<Expr>> argumentExprs)
+      : functionExpr(std::move(functionExpr)),
+        argumentExprs(std::move(argumentExprs)) {}
+
+  llvm::Value* codegen(CodegenContext*) const override;
+  void print(std::ostream& o) const override {
+    o << "FuncCall(func = " << *functionExpr << ", args = {";
+    for (int i = 0, len = argumentExprs.size(); i < len; ++i) {
+      if (i != 0) { o << ", "; }
+      o << *argumentExprs[i];
+    }
+    o << "})";
+  }
+};
+
 struct FuncDef {
   std::string name;
   std::unique_ptr<Expr> body;
