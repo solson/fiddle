@@ -60,12 +60,12 @@ struct BinOpExpr : public Expr {
   }
 };
 
-struct FuncCallExpr : public Expr {
+struct CallExpr : public Expr {
   std::unique_ptr<Expr> functionExpr;
   std::vector<std::unique_ptr<Expr>> argumentExprs;
 
-  FuncCallExpr(std::unique_ptr<Expr> functionExpr,
-               std::vector<std::unique_ptr<Expr>> argumentExprs)
+  CallExpr(std::unique_ptr<Expr> functionExpr,
+           std::vector<std::unique_ptr<Expr>> argumentExprs)
       : functionExpr(std::move(functionExpr)),
         argumentExprs(std::move(argumentExprs)) {}
 

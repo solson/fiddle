@@ -39,7 +39,7 @@ llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
   }
 }
 
-llvm::Value* FuncCallExpr::codegen(CodegenContext* context) const {
+llvm::Value* CallExpr::codegen(CodegenContext* context) const {
   // TODO(tsion): Implement this.
   return nullptr;
 }

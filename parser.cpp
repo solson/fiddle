@@ -114,7 +114,7 @@ std::unique_ptr<Expr> Parser::parseExprPrimary() {
       if (currToken.kind == Token::kComma) { consumeToken(); }
     }
 
-    return make_unique<FuncCallExpr>(std::move(expr), std::move(argumentExprs));
+    return make_unique<CallExpr>(std::move(expr), std::move(argumentExprs));
   }
 
   return expr;
