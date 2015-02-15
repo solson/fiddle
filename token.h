@@ -77,8 +77,6 @@ struct Token {
   i64 intValue;
 
   StringRef text() const { return location.text(); }
-  bool is(TokenKind kind) const { return this->kind == kind; }
-  bool isNot(TokenKind kind) const { return !is(kind); }
 };
 
 const char* const kTokenKindNames[Token::kNumTokenKinds] = {

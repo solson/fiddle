@@ -8,8 +8,7 @@ namespace fiddle {
 std::unique_ptr<Module> Parser::parseModule() {
   std::vector<FuncDef> fns;
   while (!atEnd()) {
-    Token token = nextToken();
-    if (token.isNot(Token::kKeywordFn)) { break; }
+    if (currToken.kind != Token::kKeywordFn) { break; }
     auto fn = parseFuncDef();
     if (!fn) { break; }
     fns.push_back(std::move(*fn));
@@ -19,37 +18,39 @@ std::unique_ptr<Module> Parser::parseModule() {
 
 std::unique_ptr<FuncDef> Parser::parseFuncDef() {
   if (!expectToken(Token::kKeywordFn)) { return nullptr; }
-  Token name = nextToken();
-  if (name.isNot(Token::kIdentifier)) {
+
+  if (currToken.kind != Token::kIdentifier) {
     report(Diagnostic::kError, "expected function name after 'fn' keyword",
-           name);
+           currToken);
     return nullptr;
   }
+  std::string functionName = currToken.text().toString();
   consumeToken();
+
   if (!expectToken(Token::kParenLeft)) { return nullptr; }
   std::vector<std::string> argNames;
+
   while (true) {
-    Token token = nextToken();
-    if (token.is(Token::kParenRight)) {
+    if (currToken.kind == Token::kParenRight) {
       consumeToken();
       break;
     }
-    token = nextToken();
-    if (token.isNot(Token::kIdentifier)) {
+    if (currToken.kind != Token::kIdentifier) {
       report(Diagnostic::kError, "expected argument name in fn argument list",
-             token);
+             currToken);
       return nullptr;
     }
-    argNames.push_back(token.text().toString());
+    argNames.push_back(currToken.text().toString());
     consumeToken();
-    token = nextToken();
-    if (token.is(Token::kComma)) { consumeToken(); }
+    if (currToken.kind == Token::kComma) { consumeToken(); }
   }
+
   if (!expectToken(Token::kBraceLeft)) { return nullptr; }
   auto body = parseExpr();
   if (!body) { return nullptr; }
   if (!expectToken(Token::kBraceRight)) { return nullptr; }
-  return make_unique<FuncDef>(name.text().toString(),
+
+  return make_unique<FuncDef>(std::move(functionName),
                               std::move(body),
                               std::move(argNames));
 }
@@ -61,7 +62,7 @@ std::unique_ptr<Expr> Parser::parseExpr() {
 }
 
 std::unique_ptr<Expr> Parser::parseExprPrimary() {
-  Token token = nextToken();
+  Token token = currToken;
   switch (token.kind) {
     case Token::kInvalid:
       report(Diagnostic::kError, "invalid token", token);
@@ -111,10 +112,10 @@ bool getPrecedence(const std::string& binOp, u8* precedence) {
 std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
                                                 u8 minPrecedence) {
   while (!atEnd()) {
-    Token token = nextToken();
+    Token token = currToken;
     std::string op = token.text().toString();
     u8 precedence;
-    if (token.isNot(Token::kOperator) || !getPrecedence(op, &precedence) ||
+    if (token.kind != Token::kOperator || !getPrecedence(op, &precedence) ||
         precedence < minPrecedence) {
       break;
     }
@@ -123,10 +124,10 @@ std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
     if (!rhs) { return nullptr; }
 
     while (!atEnd()) {
-      Token token2 = nextToken();
+      Token token2 = currToken;
       std::string op2 = token2.text().toString();
       u8 precedence2;
-      if (token2.isNot(Token::kOperator) || !getPrecedence(op2, &precedence2) ||
+      if (token2.kind != Token::kOperator || !getPrecedence(op2, &precedence2) ||
           precedence2 <= precedence) {
         break;
       }
@@ -140,10 +141,6 @@ std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
   return lhs;
 }
 
-Token Parser::nextToken() {
-  return currToken;
-}
-
 Token Parser::consumeToken() {
   assert(!atEnd());
   currToken = lexer.nextToken();
@@ -152,11 +149,11 @@ Token Parser::consumeToken() {
 }
 
 bool Parser::atEnd() const {
-  return currToken.is(Token::kEOF);
+  return currToken.kind == Token::kEOF;
 }
 
 bool Parser::expectToken(Token::TokenKind expected) {
-  Token token = nextToken();
+  Token token = currToken;
   if (token.kind == expected) {
     consumeToken();
     return true;
