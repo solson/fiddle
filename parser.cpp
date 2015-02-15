@@ -112,25 +112,27 @@ bool getPrecedence(const std::string& binOp, u8* precedence) {
 std::unique_ptr<Expr> Parser::parseExprOperator(std::unique_ptr<Expr> lhs,
                                                 u8 minPrecedence) {
   while (!atEnd()) {
-    Token token = currToken;
-    std::string op = token.text().toString();
+    std::string op = currToken.text().toString();
     u8 precedence;
-    if (token.kind != Token::kOperator || !getPrecedence(op, &precedence) ||
+    if (currToken.kind != Token::kOperator ||
+        !getPrecedence(op, &precedence) ||
         precedence < minPrecedence) {
       break;
     }
     consumeToken();
+
     auto rhs = parseExprPrimary();
     if (!rhs) { return nullptr; }
 
     while (!atEnd()) {
-      Token token2 = currToken;
-      std::string op2 = token2.text().toString();
+      std::string op2 = currToken.text().toString();
       u8 precedence2;
-      if (token2.kind != Token::kOperator || !getPrecedence(op2, &precedence2) ||
+      if (currToken.kind != Token::kOperator ||
+          !getPrecedence(op2, &precedence2) ||
           precedence2 <= precedence) {
         break;
       }
+
       rhs = parseExprOperator(std::move(rhs), precedence2);
       if (!rhs) { return nullptr; }
     }
@@ -153,13 +155,13 @@ bool Parser::atEnd() const {
 }
 
 bool Parser::expectToken(Token::TokenKind expected) {
-  Token token = currToken;
-  if (token.kind == expected) {
+  if (currToken.kind == expected) {
     consumeToken();
     return true;
   }
   // TODO(tsion): Fix the extreme vagueness of this message.
-  report(Diagnostic::kError, "expected one token kind but got another", token);
+  report(Diagnostic::kError, "expected one token kind but got another",
+         currToken);
   return false;
 }
 
