@@ -1,11 +1,19 @@
+fn main(argc, argv) {
+  sum_squares(dec(argc), 4)
+}
+
 fn sum_squares(x, y) {
-  x * x + y * y
+  add(square(x), square(y))
+}
+
+fn square(x) {
+  x * x
 }
 
 fn add(x, y) {
   x + y
 }
 
-fn main(argc, argv) {
-  argc - 1
+fn dec(x) {
+  x - 1
 }

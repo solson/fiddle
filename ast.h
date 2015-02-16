@@ -89,8 +89,6 @@ struct FuncDef {
           std::unique_ptr<Expr> body,
           std::vector<std::string> args)
       : name(name), body(std::move(body)), args(std::move(args)) {}
-
-  void codegen(llvm::Module* module) const;
 };
 
 inline std::ostream& operator<<(std::ostream& o, const FuncDef& fn) {

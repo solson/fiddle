@@ -1,21 +1,26 @@
 #include "ast.h"
 #include "codegen.h"
+#include <llvm/Analysis/Verifier.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 
 namespace fiddle {
 
-llvm::Value* IntExpr::codegen(CodegenContext*) const {
-  return llvm::ConstantInt::get(llvm::getGlobalContext(),
+llvm::Value* IntExpr::codegen(CodegenContext* context) const {
+  return llvm::ConstantInt::get(context->module->getContext(),
                                 llvm::APInt(32, val));
 }
 
 llvm::Value* VarExpr::codegen(CodegenContext* context) const {
-  auto it = context->argumentValues.find(name);
-  if (it == context->argumentValues.end()) { return nullptr; }
-  return it->second;
+  const std::vector<llvm::Value*> v = (*context->identifierMap)[name];
+  if (v.empty()) {
+    // TODO(tsion): Diagnose reference to undefined name.
+    return nullptr;
+  }
+  return v.back();
 }
 
 llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
@@ -27,64 +32,89 @@ llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
 
   llvm::IRBuilder<> builder{context->currentBlock};
   if (name == "+") {
-    return builder.CreateAdd(left, right, "addtmp");
+    return builder.CreateAdd(left, right, "add");
   } else if (name == "-") {
-    return builder.CreateSub(left, right, "subtmp");
+    return builder.CreateSub(left, right, "sub");
   } else if (name == "*") {
-    return builder.CreateMul(left, right, "multmp");
+    return builder.CreateMul(left, right, "mul");
   } else if (name == "/") {
-    return builder.CreateSDiv(left, right, "sdivtmp");
+    return builder.CreateSDiv(left, right, "div");
   } else {
     return nullptr;
   }
 }
 
 llvm::Value* CallExpr::codegen(CodegenContext* context) const {
-  // TODO(tsion): Implement this.
-  return nullptr;
+  llvm::Value* func = functionExpr->codegen(context);
+  std::vector<llvm::Value*> args;
+  args.reserve(argumentExprs.size());
+  for (const auto& argExpr : argumentExprs) {
+    args.push_back(argExpr->codegen(context));
+  }
+  llvm::IRBuilder<> builder{context->currentBlock};
+  return builder.CreateCall(func, args, "call");
 }
 
-void FuncDef::codegen(llvm::Module* module) const {
-  using namespace llvm;
+llvm::Function* createFunc(const FuncDef& def, llvm::Module* module) {
+  llvm::Type* i32Type = llvm::IntegerType::get(module->getContext(), 32);
+  std::vector<llvm::Type*> argTypes(def.args.size(), i32Type);
 
-  Type* i32Type = IntegerType::get(module->getContext(), 32);
-  std::vector<Type*> argTypes{args.size(), i32Type};
-
-  Function* func = Function::Create(
-      FunctionType::get(i32Type, argTypes, false),
-      GlobalValue::ExternalLinkage,
-      name,
+  return llvm::Function::Create(
+      llvm::FunctionType::get(i32Type, argTypes, false),
+      llvm::GlobalValue::ExternalLinkage,
+      def.name,
       module);
+}
 
-  std::unordered_map<std::string, Value*> argumentValues;
-
+void transFuncDef(
+    const FuncDef& def,
+    llvm::Function* func,
+    llvm::Module* module,
+    std::unordered_map<std::string, std::vector<llvm::Value*>>* identifierMap) {
   usize i = 0;
-  for (Function::arg_iterator it = func->arg_begin();
-       i != args.size();
-       ++it, ++i) {
-    it->setName(args[i]);
-    argumentValues[args[i]] = it;
+  for (auto it = func->arg_begin(); it != func->arg_end(); ++it, ++i) {
+    it->setName(def.args[i]);
+    (*identifierMap)[def.args[i]].push_back(it);
   }
 
-  BasicBlock* entryBlock = BasicBlock::Create(
+  llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(
       module->getContext(),
       "entry",
       func,
       nullptr);
 
-  CodegenContext context{entryBlock, argumentValues};
-  Value* result = body->codegen(&context);
+  CodegenContext context{module, entryBlock, identifierMap};
+  llvm::Value* result = def.body->codegen(&context);
 
-  IRBuilder<> builder{entryBlock};
+  for (const auto& arg : def.args) {
+    (*identifierMap)[arg].pop_back();
+  }
+
+  llvm::IRBuilder<> builder{entryBlock};
   builder.CreateRet(result);
+
+  assert(!llvm::verifyFunction(*func));
 }
 
 std::unique_ptr<llvm::Module> Module::codegen() const {
-  auto module = make_unique<llvm::Module>("fiddle", llvm::getGlobalContext());
+  auto llmodule = make_unique<llvm::Module>("fiddle", llvm::getGlobalContext());
+
+  std::unordered_map<std::string, llvm::Function*> functionMap;
+  std::unordered_map<std::string, std::vector<llvm::Value*>> identifierMap;
+
   for (const auto& fn : functions) {
-    fn.codegen(module.get());
+    llvm::Function* llfunc = createFunc(fn, llmodule.get());
+    identifierMap[fn.name].push_back(llfunc);
+    functionMap[fn.name] = llfunc;
   }
-  return module;
+
+  for (const auto& fn : functions) {
+    transFuncDef(fn, functionMap[fn.name], llmodule.get(), &identifierMap);
+  }
+
+  assert(!llvm::verifyModule(*llmodule));
+
+  return llmodule;
 };
 
 } // namespace fiddle
