@@ -30,7 +30,7 @@ struct Lexer {
   void scanInt(Token* token);
   void scanChars(bool (*pred)(char));
   char currChar();
-  char consumeChar();
+  void consumeChar();
   bool atEnd() const;
   StringRef textFrom(usize position) const;
   void report(Diagnostic::DiagnosticLevel level, StringRef message,

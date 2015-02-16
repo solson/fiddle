@@ -66,7 +66,9 @@ const std::unordered_map<std::string, Token::TokenKind> kKeywords{
 };
 
 Token Lexer::nextToken() {
-  scanChars(isWhitespace);
+  if (!atEnd()) {
+    scanChars(isWhitespace);
+  }
 
   if (atEnd()) {
     Token token;
@@ -130,13 +132,12 @@ char Lexer::currChar() {
   return source()[byteOffset];
 }
 
-char Lexer::consumeChar() {
+void Lexer::consumeChar() {
   assert(!atEnd());
   if (currChar() == '\n') {
     sourceFile->newlineOffsets.push_back(byteOffset);
   }
   ++byteOffset;
-  return currChar();
 }
 
 bool Lexer::atEnd() const {
