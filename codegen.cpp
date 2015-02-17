@@ -67,7 +67,16 @@ llvm::Function* createFunc(const FuncDef& def, llvm::Module* module) {
 }
 
 llvm::Value* BlockExpr::codegen(CodegenContext* context) const {
-  return nullptr;
+  // TODO(tsion): Stop defaulting to integer 0 for empty blocks once we have
+  // multiple types.
+  llvm::Value* val = llvm::ConstantInt::get(context->module->getContext(),
+                                            llvm::APInt(32, 0));
+
+  for (const auto& expr : exprs) {
+    val = expr->codegen(context);
+  }
+
+  return val;
 }
 
 void transFuncDef(
