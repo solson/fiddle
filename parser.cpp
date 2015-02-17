@@ -45,14 +45,32 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
     if (currToken.kind == Token::kComma) { consumeToken(); }
   }
 
-  if (!expectToken(Token::kBraceLeft)) { return nullptr; }
-  auto body = parseExpr();
+  std::unique_ptr<Expr> body = parseBlockExpr();
   if (!body) { return nullptr; }
-  if (!expectToken(Token::kBraceRight)) { return nullptr; }
 
   return make_unique<FuncDef>(std::move(functionName),
                               std::move(body),
                               std::move(argNames));
+}
+
+std::unique_ptr<Expr> Parser::parseBlockExpr() {
+  if (!expectToken(Token::kBraceLeft)) { return nullptr; }
+  std::vector<std::unique_ptr<Expr>> exprs;
+
+  while (true) {
+    if (currToken.kind == Token::kBraceRight) {
+      consumeToken();
+      break;
+    }
+
+    std::unique_ptr<Expr> expr = parseExpr();
+    if (!expr) { return nullptr; }
+    exprs.push_back(std::move(expr));
+
+    if (currToken.kind == Token::kSemicolon) { consumeToken(); }
+  }
+
+  return make_unique<BlockExpr>(std::move(exprs));
 }
 
 std::unique_ptr<Expr> Parser::parseExpr() {
@@ -91,6 +109,10 @@ std::unique_ptr<Expr> Parser::parseExprPrimary() {
       consumeToken();
       expr = parseExpr();
       if (!expectToken(Token::kParenRight)) { return nullptr; }
+      break;
+
+    case Token::kBraceLeft:
+      expr = parseBlockExpr();
       break;
 
     default:

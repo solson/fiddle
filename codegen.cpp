@@ -66,6 +66,10 @@ llvm::Function* createFunc(const FuncDef& def, llvm::Module* module) {
       module);
 }
 
+llvm::Value* BlockExpr::codegen(CodegenContext* context) const {
+  return nullptr;
+}
+
 void transFuncDef(
     const FuncDef& def,
     llvm::Function* func,

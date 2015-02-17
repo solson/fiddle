@@ -60,7 +60,8 @@ struct SourceRange {
   X(kBraceRight, "'}'") \
   X(kBracketLeft, "'['") \
   X(kBracketRight, "']'") \
-  X(kComma, "','")
+  X(kComma, "','") \
+  X(kSemicolon, "';'")
 
 struct Token {
   enum TokenKind {

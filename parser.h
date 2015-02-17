@@ -32,6 +32,7 @@ struct Parser {
   std::unique_ptr<Expr> parseExprPrimary();
   std::unique_ptr<Expr> parseExprOperator(std::unique_ptr<Expr> lhs,
                                           u8 minPrecedence);
+  std::unique_ptr<Expr> parseBlockExpr();
 
   Token nextToken();
   Token consumeToken();

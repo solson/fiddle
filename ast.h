@@ -80,6 +80,23 @@ struct CallExpr : public Expr {
   }
 };
 
+struct BlockExpr : public Expr {
+  std::vector<std::unique_ptr<Expr>> exprs;
+
+  BlockExpr(std::vector<std::unique_ptr<Expr>> exprs)
+      : exprs(std::move(exprs)) {}
+
+  llvm::Value* codegen(CodegenContext*) const override;
+  void print(std::ostream& o) const override {
+    o << "Block{";
+    for (int i = 0, len = exprs.size(); i < len; ++i) {
+      if (i != 0) { o << "; "; }
+      o << *exprs[i];
+    }
+    o << "}";
+  }
+};
+
 struct FuncDef {
   std::string name;
   std::unique_ptr<Expr> body;
