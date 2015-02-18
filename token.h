@@ -52,6 +52,7 @@ struct SourceRange {
   X(kInteger, "integer literal") \
   X(kOperator, "operator") \
   X(kKeywordEnum, "keyword 'enum'") \
+  X(kKeywordExtern, "keyword 'extern'") \
   X(kKeywordFn, "keyword 'fn'") \
   X(kKeywordStruct, "keyword 'struct'") \
   X(kParenLeft, "'('") \

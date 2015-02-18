@@ -9,12 +9,12 @@
 
 namespace fiddle {
 
-llvm::Value* IntExpr::codegen(CodegenContext* context) const {
+llvm::Value* IntExpr::codegen(FuncContext* context) const {
   return llvm::ConstantInt::get(context->module->getContext(),
                                 llvm::APInt(32, val));
 }
 
-llvm::Value* VarExpr::codegen(CodegenContext* context) const {
+llvm::Value* VarExpr::codegen(FuncContext* context) const {
   const std::vector<llvm::Value*> v = (*context->identifierMap)[name];
   if (v.empty()) {
     // TODO(tsion): Diagnose reference to undefined name.
@@ -23,7 +23,7 @@ llvm::Value* VarExpr::codegen(CodegenContext* context) const {
   return v.back();
 }
 
-llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
+llvm::Value* BinOpExpr::codegen(FuncContext* context) const {
   llvm::Value* left  = lhs->codegen(context);
   llvm::Value* right = rhs->codegen(context);
   if (!left || !right) {
@@ -44,7 +44,7 @@ llvm::Value* BinOpExpr::codegen(CodegenContext* context) const {
   }
 }
 
-llvm::Value* CallExpr::codegen(CodegenContext* context) const {
+llvm::Value* CallExpr::codegen(FuncContext* context) const {
   llvm::Value* func = functionExpr->codegen(context);
   std::vector<llvm::Value*> args;
   args.reserve(argumentExprs.size());
@@ -55,18 +55,7 @@ llvm::Value* CallExpr::codegen(CodegenContext* context) const {
   return builder.CreateCall(func, args, "call");
 }
 
-llvm::Function* createFunc(const FuncDef& def, llvm::Module* module) {
-  llvm::Type* i32Type = llvm::IntegerType::get(module->getContext(), 32);
-  std::vector<llvm::Type*> argTypes(def.args.size(), i32Type);
-
-  return llvm::Function::Create(
-      llvm::FunctionType::get(i32Type, argTypes, false),
-      llvm::GlobalValue::ExternalLinkage,
-      def.name,
-      module);
-}
-
-llvm::Value* BlockExpr::codegen(CodegenContext* context) const {
+llvm::Value* BlockExpr::codegen(FuncContext* context) const {
   // TODO(tsion): Stop defaulting to integer 0 for empty blocks once we have
   // multiple types.
   llvm::Value* val = llvm::ConstantInt::get(context->module->getContext(),
@@ -79,50 +68,57 @@ llvm::Value* BlockExpr::codegen(CodegenContext* context) const {
   return val;
 }
 
-void transFuncDef(
-    const FuncDef& def,
-    llvm::Function* func,
-    llvm::Module* module,
-    std::unordered_map<std::string, std::vector<llvm::Value*>>* identifierMap) {
+llvm::Function* codegenProto(const FuncProto& proto, llvm::Module* module) {
+  llvm::Type* i32Type = llvm::IntegerType::get(module->getContext(), 32);
+  std::vector<llvm::Type*> argTypes(proto.args.size(), i32Type);
+
+  return llvm::Function::Create(
+      llvm::FunctionType::get(i32Type, argTypes, false),
+      llvm::GlobalValue::ExternalLinkage,
+      proto.name,
+      module);
+}
+
+void FuncDef::codegen(ModuleContext* context, llvm::Function* llfunc) const {
   usize i = 0;
-  for (auto it = func->arg_begin(); it != func->arg_end(); ++it, ++i) {
-    it->setName(def.args[i]);
-    (*identifierMap)[def.args[i]].push_back(it);
+  for (auto it = llfunc->arg_begin(); it != llfunc->arg_end(); ++it, ++i) {
+    it->setName(proto.args[i]);
+    context->identifierMap[proto.args[i]].push_back(it);
   }
 
   llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(
-      module->getContext(),
+      context->module->getContext(),
       "entry",
-      func,
+      llfunc,
       nullptr);
 
-  CodegenContext context{module, entryBlock, identifierMap};
-  llvm::Value* result = def.body->codegen(&context);
+  FuncContext funcContext{context->module, entryBlock, &context->identifierMap};
+  llvm::Value* result = body->codegen(&funcContext);
 
-  for (const auto& arg : def.args) {
-    (*identifierMap)[arg].pop_back();
+  for (const auto& arg : proto.args) {
+    context->identifierMap[arg].pop_back();
   }
 
   llvm::IRBuilder<> builder{entryBlock};
   builder.CreateRet(result);
 
-  assert(!llvm::verifyFunction(*func));
+  assert(!llvm::verifyFunction(*llfunc));
 }
 
 std::unique_ptr<llvm::Module> Module::codegen() const {
   auto llmodule = make_unique<llvm::Module>("fiddle", llvm::getGlobalContext());
+  ModuleContext context(llmodule.get());
 
   std::unordered_map<std::string, llvm::Function*> functionMap;
-  std::unordered_map<std::string, std::vector<llvm::Value*>> identifierMap;
 
   for (const auto& fn : functions) {
-    llvm::Function* llfunc = createFunc(fn, llmodule.get());
-    identifierMap[fn.name].push_back(llfunc);
-    functionMap[fn.name] = llfunc;
+    llvm::Function* llfunc = codegenProto(fn->proto, llmodule.get());
+    context.identifierMap[fn->proto.name].push_back(llfunc);
+    functionMap[fn->proto.name] = llfunc;
   }
 
   for (const auto& fn : functions) {
-    transFuncDef(fn, functionMap[fn.name], llmodule.get(), &identifierMap);
+    fn->codegen(&context, functionMap[fn->proto.name]);
   }
 
   assert(!llvm::verifyModule(*llmodule));

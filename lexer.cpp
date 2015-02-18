@@ -61,6 +61,7 @@ void Lexer::scanInt(Token* token) {
 
 const std::unordered_map<std::string, Token::TokenKind> kKeywords{
   {"enum", Token::kKeywordEnum},
+  {"extern", Token::kKeywordExtern},
   {"fn", Token::kKeywordFn},
   {"struct", Token::kKeywordStruct},
 };

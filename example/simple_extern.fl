@@ -1,0 +1,5 @@
+extern fn putchar(c)
+
+fn main() {
+  putchar(97)
+}

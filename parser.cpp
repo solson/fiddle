@@ -6,17 +6,34 @@
 namespace fiddle {
 
 std::unique_ptr<Module> Parser::parseModule() {
-  std::vector<FuncDef> fns;
+  std::vector<std::unique_ptr<Func>> fns;
   while (!atEnd()) {
-    if (currToken.kind != Token::kKeywordFn) { break; }
-    auto fn = parseFuncDef();
-    if (!fn) { break; }
-    fns.push_back(std::move(*fn));
+    switch (currToken.kind) {
+      case Token::kKeywordFn: {
+        auto fn = parseFuncDef();
+        if (!fn) { return nullptr; }
+        fns.push_back(std::move(fn));
+        break;
+      }
+
+      case Token::kKeywordExtern: {
+        auto fn = parseExternFunc();
+        if (!fn) { return nullptr; }
+        fns.push_back(std::move(fn));
+        break;
+      }
+
+      default:
+        return nullptr;
+    }
   }
+
   return make_unique<Module>(std::move(fns));
 }
 
-std::unique_ptr<FuncDef> Parser::parseFuncDef() {
+// Parse the prototype of a function (its name and arguments).
+// E.g. "fn foo(a, b, c)"
+std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   if (!expectToken(Token::kKeywordFn)) { return nullptr; }
 
   if (currToken.kind != Token::kIdentifier) {
@@ -45,12 +62,22 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
     if (currToken.kind == Token::kComma) { consumeToken(); }
   }
 
+  return make_unique<FuncProto>(std::move(functionName), std::move(argNames));
+}
+
+std::unique_ptr<ExternFunc> Parser::parseExternFunc() {
+  if (!expectToken(Token::kKeywordExtern)) { return nullptr; }
+  std::unique_ptr<FuncProto> proto = parseFuncProto();
+  if (!proto) { return nullptr; }
+  return make_unique<ExternFunc>(std::move(*proto));
+}
+
+std::unique_ptr<FuncDef> Parser::parseFuncDef() {
+  std::unique_ptr<FuncProto> proto = parseFuncProto();
+  if (!proto) { return nullptr; }
   std::unique_ptr<Expr> body = parseBlockExpr();
   if (!body) { return nullptr; }
-
-  return make_unique<FuncDef>(std::move(functionName),
-                              std::move(body),
-                              std::move(argNames));
+  return make_unique<FuncDef>(std::move(*proto), std::move(body));
 }
 
 std::unique_ptr<Expr> Parser::parseBlockExpr() {
