@@ -70,7 +70,7 @@ llvm::Value* BlockExpr::codegen(FuncContext* context) const {
 
 llvm::Function* codegenProto(const FuncProto& proto, llvm::Module* module) {
   llvm::Type* i32Type = llvm::IntegerType::get(module->getContext(), 32);
-  std::vector<llvm::Type*> argTypes(proto.args.size(), i32Type);
+  std::vector<llvm::Type*> argTypes(proto.argTypes.size(), i32Type);
 
   return llvm::Function::Create(
       llvm::FunctionType::get(i32Type, argTypes, false),
@@ -82,8 +82,8 @@ llvm::Function* codegenProto(const FuncProto& proto, llvm::Module* module) {
 void FuncDef::codegen(ModuleContext* context, llvm::Function* llfunc) const {
   usize i = 0;
   for (auto it = llfunc->arg_begin(); it != llfunc->arg_end(); ++it, ++i) {
-    it->setName(proto.args[i]);
-    context->identifierMap[proto.args[i]].push_back(it);
+    it->setName(proto.argNames[i]);
+    context->identifierMap[proto.argNames[i]].push_back(it);
   }
 
   llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(
@@ -95,7 +95,7 @@ void FuncDef::codegen(ModuleContext* context, llvm::Function* llfunc) const {
   FuncContext funcContext{context->module, entryBlock, &context->identifierMap};
   llvm::Value* result = body->codegen(&funcContext);
 
-  for (const auto& arg : proto.args) {
+  for (const auto& arg : proto.argNames) {
     context->identifierMap[arg].pop_back();
   }
 

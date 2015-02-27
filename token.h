@@ -55,6 +55,8 @@ struct SourceRange {
   X(kKeywordExtern, "keyword 'extern'") \
   X(kKeywordFn, "keyword 'fn'") \
   X(kKeywordStruct, "keyword 'struct'") \
+  X(kArrowLeft, "'<-'") \
+  X(kArrowRight, "'->'") \
   X(kParenLeft, "'('") \
   X(kParenRight, "')'") \
   X(kBraceLeft, "'{'") \
@@ -62,7 +64,8 @@ struct SourceRange {
   X(kBracketLeft, "'['") \
   X(kBracketRight, "']'") \
   X(kComma, "','") \
-  X(kSemicolon, "';'")
+  X(kSemicolon, "';'") \
+  X(kColon, "':'")
 
 struct Token {
   enum TokenKind {

@@ -15,6 +15,7 @@ using namespace llvm;
 void runFnTest(std::string filename, std::string source) {
   Parser parser{SourceFile{filename, source}};
   auto module = parser.parseModule();
+  parser.scanToEnd();
   for (const auto& diag : parser.diagnostics) {
     std::cout << diag;
   }

@@ -1,6 +1,6 @@
-extern fn putchar(c)
+extern fn putchar(c: i32) -> i32
 
-fn main() {
+fn main() -> i32 {
   putchar(72);
   putchar(101);
   putchar(108);

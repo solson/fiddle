@@ -32,7 +32,7 @@ std::unique_ptr<Module> Parser::parseModule() {
 }
 
 // Parse the prototype of a function (its name and arguments).
-// E.g. "fn foo(a, b, c)"
+// E.g. "fn foo(a: A, b: B, c: C) -> D"
 std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   if (!expectToken(Token::kKeywordFn)) { return nullptr; }
 
@@ -44,14 +44,18 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   std::string functionName = currToken.text().toString();
   consumeToken();
 
+  // Parse arguments.
   if (!expectToken(Token::kParenLeft)) { return nullptr; }
   std::vector<std::string> argNames;
+  std::vector<TypeAscription> argTypes;
 
   while (true) {
     if (currToken.kind == Token::kParenRight) {
       consumeToken();
       break;
     }
+
+    // Parse argument name.
     if (currToken.kind != Token::kIdentifier) {
       report(Diagnostic::kError, "expected argument name in fn argument list",
              currToken);
@@ -59,10 +63,41 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
     }
     argNames.push_back(currToken.text().toString());
     consumeToken();
+
+    if (!expectToken(Token::kColon)) { return nullptr; }
+
+    // Parse argument type.
+    if (currToken.kind != Token::kIdentifier) {
+      report(Diagnostic::kError, "expected argument type in fn argument list",
+             currToken);
+      return nullptr;
+    }
+    argTypes.emplace_back(currToken.text().toString());
+    consumeToken();
+
     if (currToken.kind == Token::kComma) { consumeToken(); }
   }
 
-  return make_unique<FuncProto>(std::move(functionName), std::move(argNames));
+  // Parse return type.
+  std::string returnType;
+  if (currToken.kind == Token::kArrowRight) {
+    consumeToken();
+
+    if (currToken.kind != Token::kIdentifier) {
+      report(Diagnostic::kError, "expected return type after '->'", currToken);
+      return nullptr;
+    }
+    returnType = currToken.text().toString();
+    consumeToken();
+  } else {
+    returnType = "void";
+  }
+
+  return make_unique<FuncProto>(
+      std::move(functionName),
+      std::move(argNames),
+      std::move(argTypes),
+      std::move(TypeAscription(returnType)));
 }
 
 std::unique_ptr<ExternFunc> Parser::parseExternFunc() {
@@ -226,6 +261,10 @@ Token Parser::consumeToken() {
 
 bool Parser::atEnd() const {
   return currToken.kind == Token::kEOF;
+}
+
+void Parser::scanToEnd() {
+  while (!atEnd()) { consumeToken(); }
 }
 
 bool Parser::expectToken(Token::TokenKind expected) {

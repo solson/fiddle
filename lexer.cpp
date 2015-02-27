@@ -66,6 +66,12 @@ const std::unordered_map<std::string, Token::TokenKind> kKeywords{
   {"struct", Token::kKeywordStruct},
 };
 
+// Like keywords, but for operator characters.
+const std::unordered_map<std::string, Token::TokenKind> kSpecialOperators{
+  {"->", Token::kArrowRight},
+  {"<-", Token::kArrowLeft},
+};
+
 Token Lexer::nextToken() {
   if (!atEnd()) {
     scanChars(isWhitespace);
@@ -96,8 +102,13 @@ Token Lexer::nextToken() {
       token.kind = it->second;
     }
   } else if (isOperatorChar(c)) {
-    token.kind = Token::kOperator;
     scanChars(isOperatorChar);
+    auto it = kSpecialOperators.find(textFrom(token.location.start).toString());
+    if (it == kSpecialOperators.end()) {
+      token.kind = Token::kOperator;
+    } else {
+      token.kind = it->second;
+    }
   } else {
     switch (c) {
       case '(': token.kind = Token::kParenLeft;    break;
@@ -108,6 +119,7 @@ Token Lexer::nextToken() {
       case ']': token.kind = Token::kBracketRight; break;
       case ',': token.kind = Token::kComma;        break;
       case ';': token.kind = Token::kSemicolon;    break;
+      case ':': token.kind = Token::kColon;        break;
       default:  token.kind = Token::kInvalid;
     }
     consumeChar();

@@ -102,20 +102,39 @@ struct BlockExpr : public Expr {
   }
 };
 
-// Function prototype (name, arguments, types).
-struct FuncProto final : public ASTNode {
+struct TypeAscription : public ASTNode {
   std::string name;
-  std::vector<std::string> args;
 
-  FuncProto(std::string name, std::vector<std::string> args)
-      : name(std::move(name)), args(std::move(args)) {}
+  TypeAscription(std::string name) : name(std::move(name)) {}
+
+  void dump(std::ostream& o) const override {
+    o << "Type(" << name << ")";
+  }
+};
+
+// Function prototype (name, arguments, types).
+struct FuncProto : public ASTNode {
+  std::string name;
+  std::vector<std::string> argNames;
+  std::vector<TypeAscription> argTypes;
+  TypeAscription returnType;
+
+  FuncProto(std::string name,
+            std::vector<std::string> argNames,
+            std::vector<TypeAscription> argTypes,
+            TypeAscription returnType)
+      : name(std::move(name)),
+        argNames(std::move(argNames)),
+        argTypes(std::move(argTypes)),
+        returnType(std::move(returnType)) {}
+
   void dump(std::ostream& o) const override {
     o << "FuncProto(name = " << name << ", args = {";
-    for (int i = 0, len = args.size(); i < len; ++i) {
+    for (int i = 0, len = argNames.size(); i < len; ++i) {
       if (i != 0) { o << ", "; }
-      o << args[i];
+      o << argNames[i] << ": " << argTypes[i];
     }
-    o << "})";
+    o << "}, returnType = " << returnType << ")";
   }
 };
 

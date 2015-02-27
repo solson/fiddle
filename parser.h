@@ -39,6 +39,7 @@ struct Parser {
   Token nextToken();
   Token consumeToken();
   bool atEnd() const;
+  void scanToEnd();
   bool expectToken(Token::TokenKind expected);
   void report(Diagnostic::DiagnosticLevel level, StringRef message,
               const Token& token);
