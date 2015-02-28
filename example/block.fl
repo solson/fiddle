@@ -1,4 +1,4 @@
-fn block(x) {
+fn block(x: i32) -> i32 {
   x;
   x + x;
   {

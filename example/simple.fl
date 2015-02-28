@@ -1,3 +1,3 @@
-fn main(argc, argv) {
+fn main(argc: i32, argv: i64) -> i32 {
   10 * 4 + 2
 }
