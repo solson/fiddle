@@ -30,6 +30,7 @@ struct Parser {
   std::unique_ptr<FuncProto> parseFuncProto();
   std::unique_ptr<FuncDef> parseFuncDef();
   std::unique_ptr<ExternFunc> parseExternFunc();
+  std::unique_ptr<TypeAscription> parseType();
   std::unique_ptr<Expr> parseExpr();
   std::unique_ptr<Expr> parseExprPrimary();
   std::unique_ptr<Expr> parseExprOperator(std::unique_ptr<Expr> lhs,

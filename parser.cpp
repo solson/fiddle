@@ -67,37 +67,27 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
     if (!expectToken(Token::kColon)) { return nullptr; }
 
     // Parse argument type.
-    if (currToken.kind != Token::kIdentifier) {
-      report(Diagnostic::kError, "expected argument type in fn argument list",
-             currToken);
-      return nullptr;
-    }
-    argTypes.emplace_back(currToken.text().toString());
-    consumeToken();
+    std::unique_ptr<TypeAscription> argType = parseType();
+    if (!argType) { return nullptr; }
+    argTypes.push_back(std::move(*argType));
 
     if (currToken.kind == Token::kComma) { consumeToken(); }
   }
 
   // Parse return type.
-  std::string returnType;
+  TypeAscription returnType{"void"};
   if (currToken.kind == Token::kArrowRight) {
     consumeToken();
-
-    if (currToken.kind != Token::kIdentifier) {
-      report(Diagnostic::kError, "expected return type after '->'", currToken);
-      return nullptr;
-    }
-    returnType = currToken.text().toString();
-    consumeToken();
-  } else {
-    returnType = "void";
+    std::unique_ptr<TypeAscription> type = parseType();
+    if (!type) { return nullptr; }
+    returnType = std::move(*type);
   }
 
   return make_unique<FuncProto>(
       std::move(functionName),
       std::move(argNames),
       std::move(argTypes),
-      std::move(TypeAscription(returnType)));
+      std::move(returnType));
 }
 
 std::unique_ptr<ExternFunc> Parser::parseExternFunc() {
@@ -113,6 +103,17 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
   std::unique_ptr<Expr> body = parseBlockExpr();
   if (!body) { return nullptr; }
   return make_unique<FuncDef>(std::move(*proto), std::move(body));
+}
+
+std::unique_ptr<TypeAscription> Parser::parseType() {
+  if (currToken.kind != Token::kIdentifier) {
+    report(Diagnostic::kError, "expected type", currToken);
+    return nullptr;
+  }
+
+  std::string typeName = currToken.text().toString();
+  consumeToken();
+  return make_unique<TypeAscription>(typeName);
 }
 
 std::unique_ptr<Expr> Parser::parseBlockExpr() {
