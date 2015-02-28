@@ -12,21 +12,22 @@
 #include <unordered_map>
 
 namespace fl {
+namespace ast {
 
 // Abstract base class for AST nodes providing convenience functions like debug
 // printing.
-struct ASTNode {
-  virtual ~ASTNode() {}
+struct Node {
+  virtual ~Node() {}
   virtual void dump(std::ostream& o = std::cerr) const = 0;
 };
 
-inline std::ostream& operator<<(std::ostream& o, const ASTNode& node) {
+inline std::ostream& operator<<(std::ostream& o, const Node& node) {
   node.dump(o);
   return o;
 }
 
 // Abstract base class for expressions.
-struct Expr : public ASTNode {
+struct Expr : public Node {
   virtual llvm::Value* codegen(FuncContext*) const = 0;
 };
 
@@ -35,9 +36,7 @@ struct IntExpr : public Expr {
 
   IntExpr(i64 val) : val(val) {}
   llvm::Value* codegen(FuncContext*) const override;
-  void dump(std::ostream& o) const override {
-    o << "Int(" << val << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 struct VarExpr : public Expr {
@@ -45,9 +44,7 @@ struct VarExpr : public Expr {
 
   VarExpr(std::string name) : name(std::move(name)) {}
   llvm::Value* codegen(FuncContext*) const override;
-  void dump(std::ostream& o) const override {
-    o << "Var(" << name << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 struct BinOpExpr : public Expr {
@@ -60,9 +57,7 @@ struct BinOpExpr : public Expr {
       : name(std::move(name)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
   llvm::Value* codegen(FuncContext*) const override;
-  void dump(std::ostream& o) const override {
-    o << "BinOp(" << name << ", " << *lhs << ", " << *rhs << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 struct CallExpr : public Expr {
@@ -75,14 +70,7 @@ struct CallExpr : public Expr {
         argumentExprs(std::move(argumentExprs)) {}
 
   llvm::Value* codegen(FuncContext*) const override;
-  void dump(std::ostream& o) const override {
-    o << "FuncCall(func = " << *functionExpr << ", args = {";
-    for (int i = 0, len = argumentExprs.size(); i < len; ++i) {
-      if (i != 0) { o << ", "; }
-      o << *argumentExprs[i];
-    }
-    o << "})";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 struct BlockExpr : public Expr {
@@ -92,54 +80,38 @@ struct BlockExpr : public Expr {
       : exprs(std::move(exprs)) {}
 
   llvm::Value* codegen(FuncContext*) const override;
-  void dump(std::ostream& o) const override {
-    o << "Block{";
-    for (int i = 0, len = exprs.size(); i < len; ++i) {
-      if (i != 0) { o << "; "; }
-      o << *exprs[i];
-    }
-    o << "}";
-  }
+  void dump(std::ostream& o) const override;
 };
 
-struct TypeAscription : public ASTNode {
+struct Type : public Node {
   std::string name;
 
-  TypeAscription(std::string name) : name(std::move(name)) {}
+  Type(std::string name) : name(std::move(name)) {}
 
-  void dump(std::ostream& o) const override {
-    o << "Type(" << name << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 // Function prototype (name, arguments, types).
-struct FuncProto : public ASTNode {
+struct FuncProto : public Node {
   std::string name;
   std::vector<std::string> argNames;
-  std::vector<TypeAscription> argTypes;
-  TypeAscription returnType;
+  std::vector<Type> argTypes;
+  Type returnType;
 
   FuncProto(std::string name,
             std::vector<std::string> argNames,
-            std::vector<TypeAscription> argTypes,
-            TypeAscription returnType)
+            std::vector<Type> argTypes,
+            Type returnType)
       : name(std::move(name)),
         argNames(std::move(argNames)),
         argTypes(std::move(argTypes)),
         returnType(std::move(returnType)) {}
 
-  void dump(std::ostream& o) const override {
-    o << "FuncProto(name = " << name << ", args = {";
-    for (int i = 0, len = argNames.size(); i < len; ++i) {
-      if (i != 0) { o << ", "; }
-      o << argNames[i] << ": " << argTypes[i];
-    }
-    o << "}, returnType = " << returnType << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 // Abstract parent class for different function types (native and extern).
-struct Func : public ASTNode {
+struct Func : public Node {
   FuncProto proto;
 
   Func(FuncProto proto) : proto(std::move(proto)) {}
@@ -151,9 +123,7 @@ struct Func : public ASTNode {
 struct ExternFunc : public Func {
   using Func::Func; // Inherited constructor.
   virtual void codegen(ModuleContext*, llvm::Function*) const override {}
-  void dump(std::ostream& o) const override {
-    o << "ExternFunc(proto = " << proto << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
 // A natively defined function with a body.
@@ -163,26 +133,19 @@ struct FuncDef : public Func {
   FuncDef(FuncProto proto, std::unique_ptr<Expr> body)
       : Func(std::move(proto)), body(std::move(body)) {}
   virtual void codegen(ModuleContext*, llvm::Function*) const override;
-  void dump(std::ostream& o) const override {
-    o << "FuncDef(proto = " << proto << ", body = " << *body << ")";
-  }
+  void dump(std::ostream& o) const override;
 };
 
-struct Module : public ASTNode {
+struct Module : public Node {
   std::vector<std::unique_ptr<Func>> functions;
 
   Module(std::vector<std::unique_ptr<Func>> functions)
       : functions(std::move(functions)) {}
   std::unique_ptr<llvm::Module> codegen() const;
-  void dump(std::ostream& o) const override {
-    o << "Module{\n";
-    for (const auto& fn : functions) {
-      o << "  " << *fn << ";\n";
-    }
-    o << "}\n";
-  }
+  void dump(std::ostream& o) const override;
 };
 
+} // namespace ast
 } // namespace fl
 
 #endif /* AST_H_ */

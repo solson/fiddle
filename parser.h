@@ -26,16 +26,16 @@ struct Parser {
     consumeToken();
   }
 
-  std::unique_ptr<Module> parseModule();
-  std::unique_ptr<FuncProto> parseFuncProto();
-  std::unique_ptr<FuncDef> parseFuncDef();
-  std::unique_ptr<ExternFunc> parseExternFunc();
-  std::unique_ptr<TypeAscription> parseType();
-  std::unique_ptr<Expr> parseExpr();
-  std::unique_ptr<Expr> parseExprPrimary();
-  std::unique_ptr<Expr> parseExprOperator(std::unique_ptr<Expr> lhs,
-                                          u8 minPrecedence);
-  std::unique_ptr<Expr> parseBlockExpr();
+  std::unique_ptr<ast::Module> parseModule();
+  std::unique_ptr<ast::FuncProto> parseFuncProto();
+  std::unique_ptr<ast::FuncDef> parseFuncDef();
+  std::unique_ptr<ast::ExternFunc> parseExternFunc();
+  std::unique_ptr<ast::Type> parseType();
+  std::unique_ptr<ast::Expr> parseExpr();
+  std::unique_ptr<ast::Expr> parseExprPrimary();
+  std::unique_ptr<ast::Expr> parseExprOperator(std::unique_ptr<ast::Expr> lhs,
+                                               u8 minPrecedence);
+  std::unique_ptr<ast::Expr> parseBlockExpr();
 
   Token nextToken();
   Token consumeToken();

@@ -5,6 +5,8 @@
 
 namespace fl {
 
+using namespace ast;
+
 std::unique_ptr<Module> Parser::parseModule() {
   std::vector<std::unique_ptr<Func>> fns;
   while (!atEnd()) {
@@ -47,7 +49,7 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   // Parse arguments.
   if (!expectToken(Token::kParenLeft)) { return nullptr; }
   std::vector<std::string> argNames;
-  std::vector<TypeAscription> argTypes;
+  std::vector<Type> argTypes;
 
   while (true) {
     if (currToken.kind == Token::kParenRight) {
@@ -67,7 +69,7 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
     if (!expectToken(Token::kColon)) { return nullptr; }
 
     // Parse argument type.
-    std::unique_ptr<TypeAscription> argType = parseType();
+    std::unique_ptr<Type> argType = parseType();
     if (!argType) { return nullptr; }
     argTypes.push_back(std::move(*argType));
 
@@ -75,10 +77,10 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   }
 
   // Parse return type.
-  TypeAscription returnType{"void"};
+  Type returnType{"void"};
   if (currToken.kind == Token::kArrowRight) {
     consumeToken();
-    std::unique_ptr<TypeAscription> type = parseType();
+    std::unique_ptr<Type> type = parseType();
     if (!type) { return nullptr; }
     returnType = std::move(*type);
   }
@@ -105,7 +107,7 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
   return make_unique<FuncDef>(std::move(*proto), std::move(body));
 }
 
-std::unique_ptr<TypeAscription> Parser::parseType() {
+std::unique_ptr<Type> Parser::parseType() {
   if (currToken.kind != Token::kIdentifier) {
     report(Diagnostic::kError, "expected type", currToken);
     return nullptr;
@@ -113,7 +115,7 @@ std::unique_ptr<TypeAscription> Parser::parseType() {
 
   std::string typeName = currToken.text().toString();
   consumeToken();
-  return make_unique<TypeAscription>(typeName);
+  return make_unique<Type>(typeName);
 }
 
 std::unique_ptr<Expr> Parser::parseBlockExpr() {

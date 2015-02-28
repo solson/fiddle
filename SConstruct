@@ -41,6 +41,7 @@ env.ParseConfig('pkg-config --libs --cflags libedit icu-uc')
 env.Program(
   target = 'fiddle',
   source = [
+    'ast.cpp',
     'codegen.cpp',
     'editline.cpp',
     'lexer.cpp',

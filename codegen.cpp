@@ -8,6 +8,7 @@
 #include <llvm/IR/Module.h>
 
 namespace fl {
+namespace ast {
 
 llvm::Value* IntExpr::codegen(FuncContext* context) const {
   return llvm::ConstantInt::get(context->module->getContext(),
@@ -126,4 +127,5 @@ std::unique_ptr<llvm::Module> Module::codegen() const {
   return llmodule;
 };
 
+} // namespace ast
 } // namespace fl
