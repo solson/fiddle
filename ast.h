@@ -83,10 +83,21 @@ struct BlockExpr : public Expr {
   void dump(std::ostream& o) const override;
 };
 
+// Abstract base class for type expressions.
 struct Type : public Node {
+  virtual ~Type() {}
+};
+
+struct TypeName : public Type {
   std::string name;
 
-  Type(std::string name) : name(std::move(name)) {}
+  TypeName(std::string name) : name(std::move(name)) {}
+
+  void dump(std::ostream& o) const override;
+};
+
+struct UnitType : public Type {
+  UnitType() {}
 
   void dump(std::ostream& o) const override;
 };
@@ -95,13 +106,13 @@ struct Type : public Node {
 struct FuncProto : public Node {
   std::string name;
   std::vector<std::string> argNames;
-  std::vector<Type> argTypes;
-  Type returnType;
+  std::vector<std::unique_ptr<Type>> argTypes;
+  std::unique_ptr<Type> returnType;
 
   FuncProto(std::string name,
             std::vector<std::string> argNames,
-            std::vector<Type> argTypes,
-            Type returnType)
+            std::vector<std::unique_ptr<Type>> argTypes,
+            std::unique_ptr<Type> returnType)
       : name(std::move(name)),
         argNames(std::move(argNames)),
         argTypes(std::move(argTypes)),

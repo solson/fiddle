@@ -33,17 +33,21 @@ void BlockExpr::dump(std::ostream& o) const {
   o << "}";
 }
 
-void Type::dump(std::ostream& o) const {
+void TypeName::dump(std::ostream& o) const {
   o << "Type(" << name << ")";
+}
+
+void UnitType::dump(std::ostream& o) const {
+  o << "Type(())";
 }
 
 void FuncProto::dump(std::ostream& o) const {
   o << "FuncProto(name = " << name << ", args = {";
   for (int i = 0, len = argNames.size(); i < len; ++i) {
     if (i != 0) { o << ", "; }
-    o << argNames[i] << ": " << argTypes[i];
+    o << argNames[i] << ": " << *argTypes[i];
   }
-  o << "}, returnType = " << returnType << ")";
+  o << "}, returnType = " << *returnType << ")";
 }
 
 void ExternFunc::dump(std::ostream& o) const {

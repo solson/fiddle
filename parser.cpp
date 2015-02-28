@@ -49,7 +49,7 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
   // Parse arguments.
   if (!expectToken(Token::kParenLeft)) { return nullptr; }
   std::vector<std::string> argNames;
-  std::vector<Type> argTypes;
+  std::vector<std::unique_ptr<Type>> argTypes;
 
   while (true) {
     if (currToken.kind == Token::kParenRight) {
@@ -71,18 +71,19 @@ std::unique_ptr<FuncProto> Parser::parseFuncProto() {
     // Parse argument type.
     std::unique_ptr<Type> argType = parseType();
     if (!argType) { return nullptr; }
-    argTypes.push_back(std::move(*argType));
+    argTypes.push_back(std::move(argType));
 
     if (currToken.kind == Token::kComma) { consumeToken(); }
   }
 
   // Parse return type.
-  Type returnType{"void"};
+  std::unique_ptr<Type> returnType;
   if (currToken.kind == Token::kArrowRight) {
     consumeToken();
-    std::unique_ptr<Type> type = parseType();
-    if (!type) { return nullptr; }
-    returnType = std::move(*type);
+    returnType = parseType();
+    if (!returnType) { return nullptr; }
+  } else {
+    returnType = make_unique<UnitType>();
   }
 
   return make_unique<FuncProto>(
@@ -108,14 +109,22 @@ std::unique_ptr<FuncDef> Parser::parseFuncDef() {
 }
 
 std::unique_ptr<Type> Parser::parseType() {
-  if (currToken.kind != Token::kIdentifier) {
-    report(Diagnostic::kError, "expected type", currToken);
-    return nullptr;
-  }
+  switch (currToken.kind) {
+    case Token::kIdentifier: {
+      std::string typeName = currToken.text().toString();
+      consumeToken();
+      return make_unique<TypeName>(typeName);
+    }
 
-  std::string typeName = currToken.text().toString();
-  consumeToken();
-  return make_unique<Type>(typeName);
+    case Token::kParenLeft:
+      consumeToken();
+      if (!expectToken(Token::kParenRight)) { return nullptr; }
+      return make_unique<UnitType>();
+
+    default:
+      report(Diagnostic::kError, "expected type", currToken);
+      return nullptr;
+  }
 }
 
 std::unique_ptr<Expr> Parser::parseBlockExpr() {
