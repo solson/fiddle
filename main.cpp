@@ -26,22 +26,6 @@ void runFnTest(std::string filename, std::string source) {
   module->codegen()->dump();
 }
 
-void runTests() {
-  const char* tests[] = {
-    "42",
-    "1 + 2",
-    "1 * 2",
-    "1 + 2 * 3",
-    "3 * 1 + 2",
-    "3 * (1 + 2)",
-    "1 + 2 - 3 + 4"
-  };
-
-  for (auto test : tests) {
-    // runTest(test);
-  }
-}
-
 int main(int argc, char** argv) {
   if (argc == 2) {
     const char* filename = argv[1];
@@ -59,12 +43,7 @@ int main(int argc, char** argv) {
   while (editline.getLine(&line)) {
     // Strip the newline.
     line.pop_back();
-
-    if (line == ".tests") {
-      runTests();
-      continue;
-    }
-    runFnTest("<repl>", line.c_str());
+    runFnTest("<repl>", line);
   }
 
   return 0;
