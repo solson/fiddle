@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace fiddle {
+namespace fl {
 
 struct ModuleContext {
   llvm::Module* module;
@@ -25,6 +25,6 @@ struct FuncContext {
   std::unordered_map<std::string, std::vector<llvm::Value*>>* identifierMap;
 };
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* CODEGEN_H_ */

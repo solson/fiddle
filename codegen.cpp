@@ -7,7 +7,7 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 
-namespace fiddle {
+namespace fl {
 
 llvm::Value* IntExpr::codegen(FuncContext* context) const {
   return llvm::ConstantInt::get(context->module->getContext(),
@@ -126,4 +126,4 @@ std::unique_ptr<llvm::Module> Module::codegen() const {
   return llmodule;
 };
 
-} // namespace fiddle
+} // namespace fl

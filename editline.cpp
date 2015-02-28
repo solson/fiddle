@@ -1,7 +1,7 @@
 #include "editline.h"
 #include <cassert>
 
-namespace fiddle {
+namespace fl {
 
 const char* promptFn(EditLine* el) {
   EL* self;

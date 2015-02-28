@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace fiddle {
+namespace fl {
 
 struct Lexer {
   usize byteOffset = 0;
@@ -37,6 +37,6 @@ struct Lexer {
               usize location);
 };
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* LEXER_H_ */

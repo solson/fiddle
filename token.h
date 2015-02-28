@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace fiddle {
+namespace fl {
 
 struct SourceCoordinates {
   usize line;
@@ -103,6 +103,6 @@ inline std::ostream& operator<<(std::ostream& o, const Token& token) {
       << "\")";
 }
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* TOKEN_H_ */

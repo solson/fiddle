@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace fiddle {
+namespace fl {
 
 struct Parser {
   std::shared_ptr<SourceFile> sourceFile;
@@ -46,6 +46,6 @@ struct Parser {
               const Token& token);
 };
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* PARSER_H */

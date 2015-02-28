@@ -3,7 +3,7 @@
 #include <cassert>
 #include <functional>
 
-namespace fiddle {
+namespace fl {
 
 SourceCoordinates SourceFile::findCoordinates(usize offset) const {
   assert(offset < source.size());
@@ -49,4 +49,4 @@ StringRef SourceFile::getLine(usize line) const {
   return StringRef{&source[start], end - start};
 }
 
-} // namespace fiddle
+} // namespace fl

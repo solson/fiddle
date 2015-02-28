@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 
-namespace fiddle {
+namespace fl {
 
 struct Diagnostic {
   enum DiagnosticLevel {
@@ -41,6 +41,6 @@ inline std::ostream& operator<<(std::ostream& o, const Diagnostic& diag) {
   return o;
 }
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* DIAGNOSTIC_H_ */

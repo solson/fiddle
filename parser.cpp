@@ -3,7 +3,7 @@
 #include <string>
 #include <utility>
 
-namespace fiddle {
+namespace fl {
 
 std::unique_ptr<Module> Parser::parseModule() {
   std::vector<std::unique_ptr<Func>> fns;
@@ -285,4 +285,4 @@ void Parser::report(Diagnostic::DiagnosticLevel level, StringRef message,
       Diagnostic{level, message.toString(), token.location});
 }
 
-} // namespace fiddle
+} // namespace fl

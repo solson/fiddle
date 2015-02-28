@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-using namespace fiddle;
+using namespace fl;
 using namespace llvm;
 
 void runFnTest(std::string filename, std::string source) {

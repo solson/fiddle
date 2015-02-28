@@ -11,7 +11,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace fiddle {
+namespace fl {
 
 // Abstract base class for AST nodes providing convenience functions like debug
 // printing.
@@ -183,6 +183,6 @@ struct Module : public ASTNode {
   }
 };
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* AST_H_ */

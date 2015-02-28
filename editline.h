@@ -7,7 +7,7 @@ extern "C" {
 #include "histedit.h"
 }
 
-namespace fiddle {
+namespace fl {
 
 struct EL {
   EditLine* el;
@@ -19,6 +19,6 @@ struct EL {
   bool getLine(std::string* line);
 };
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* EDITLINE_H_ */

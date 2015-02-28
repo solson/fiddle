@@ -2,7 +2,7 @@
 #include <cstring>
 #include <unordered_map>
 
-namespace fiddle {
+namespace fl {
 
 bool isAscii(char c) {
   return !(c & 0x80);
@@ -166,4 +166,4 @@ void Lexer::report(Diagnostic::DiagnosticLevel level, StringRef message,
                  SourceRange{sourceFile, offset, offset}});
 }
 
-} // namespace fiddle
+} // namespace fl

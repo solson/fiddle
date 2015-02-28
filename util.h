@@ -7,7 +7,7 @@
 #include <iostream>
 #include <memory>
 
-namespace fiddle {
+namespace fl {
 
 using i8    = std::int8_t;
 using i16   = std::int16_t;
@@ -79,6 +79,6 @@ bool containsKey(const T& t, const typename T::key_type& k) {
   return t.find(k) != t.end();
 }
 
-} // namespace fiddle
+} // namespace fl
 
 #endif /* UTIL_H_ */
