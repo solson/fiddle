@@ -34,11 +34,11 @@ void BlockExpr::dump(std::ostream& o) const {
 }
 
 void TypeName::dump(std::ostream& o) const {
-  o << "Type(" << name << ")";
+  o << "TypeName(" << name << ")";
 }
 
 void UnitType::dump(std::ostream& o) const {
-  o << "Type(())";
+  o << "UnitType";
 }
 
 void FuncProto::dump(std::ostream& o) const {

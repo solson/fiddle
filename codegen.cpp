@@ -1,5 +1,6 @@
 #include "ast.h"
 #include "codegen.h"
+#include "types.h"
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -69,12 +70,40 @@ llvm::Value* BlockExpr::codegen(FuncContext* context) const {
   return val;
 }
 
+std::unique_ptr<type::Type> getType(Type* astType) {
+  std::unique_ptr<type::Type> type;
+  if (auto typeName = dynamic_cast<TypeName*>(astType)) {
+    if (typeName->name == "i8") {
+      type = make_unique<type::Int>(8, true);
+    } else if (typeName->name == "i16") {
+      type = make_unique<type::Int>(16, true);
+    } else if (typeName->name == "i32") {
+      type = make_unique<type::Int>(32, true);
+    } else if (typeName->name == "i64") {
+      type = make_unique<type::Int>(64, true);
+    } else {
+      std::cerr << "unknown type '" << typeName->name << "'\n";
+      std::abort();
+    }
+  } else if (dynamic_cast<UnitType*>(astType)) {
+    type = make_unique<type::Unit>();
+  } else {
+    std::cerr << "unknown type '" << *type << "'\n";
+    std::abort();
+  }
+  return type;
+}
+
 llvm::Function* codegenProto(const FuncProto& proto, llvm::Module* module) {
-  llvm::Type* i32Type = llvm::IntegerType::get(module->getContext(), 32);
-  std::vector<llvm::Type*> argTypes(proto.argTypes.size(), i32Type);
+  llvm::Type* returnType = getType(proto.returnType.get())->llvmType(module);
+
+  std::vector<llvm::Type*> argTypes;
+  for (const auto& argType : proto.argTypes) {
+    argTypes.push_back(getType(argType.get())->llvmType(module));
+  }
 
   return llvm::Function::Create(
-      llvm::FunctionType::get(i32Type, argTypes, false),
+      llvm::FunctionType::get(returnType, argTypes, false),
       llvm::GlobalValue::ExternalLinkage,
       proto.name,
       module);

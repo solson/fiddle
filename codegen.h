@@ -1,6 +1,7 @@
 #ifndef CODEGEN_H_
 #define CODEGEN_H_
 
+#include "ast.h"
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
 #include <unordered_map>

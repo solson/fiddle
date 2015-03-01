@@ -48,6 +48,7 @@ env.Program(
     'main.cpp',
     'parser.cpp',
     'token.cpp',
+    'types.cpp',
   ],
 )
 
