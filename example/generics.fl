@@ -1,0 +1,42 @@
+struct array[a] {
+  length: isize,
+  capacity: isize,
+  data: ptr[a]
+}
+
+enum option[a] {
+  none,
+  some(a)
+}
+
+fn nth[a](xs: array[a], i: int) -> option[a] {
+  if i >= xs.length {
+    none
+  } else {
+    some(xs.data[i])
+  }
+}
+
+struct array_int {
+  length: isize,
+  capacity: isize,
+  data: ptr_int
+}
+
+enum option_int {
+  none,
+  some(int)
+}
+
+fn nth_int(xs: array_int, i: int) -> option_int {
+  if i >= xs.length {
+    none
+  } else {
+    some(xs.data[i])
+  }
+}
+
+// fn main(argc: i32, argv: ptr[ptr[u8]]) -> i32
+fn main() -> i32 {
+  42
+}
